@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Black.Beard.ComponentModel.Attributes" Version="1.0.33" />
+    <PackageReference Include="Black.Beard.ComponentModel.Attributes" Version="1.0.34" />
     <PackageReference Include="Microsoft.Extensions.Primitives" Version="6.0.0" />
   </ItemGroup>
 

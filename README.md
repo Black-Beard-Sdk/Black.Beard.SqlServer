@@ -7,7 +7,7 @@
 Manage connectionString configuration 
 
 
-# Register all DbProviderFactory in the assemblies
+## Register all DbProviderFactory in the assemblies
 
 ```CSHARP
 
@@ -22,7 +22,7 @@ Manage connectionString configuration
 
 ```CSHARP
 
-# Create and resolve a new ConnectionString.
+## Create and resolve a new ConnectionString.
 
 ```CSHARP
 

@@ -1,0 +1,13 @@
+﻿
+
+CREATE SCHEMA [Schema1] AUTHORIZATION [dbo]
+GO
+
+GRANT ALTER ON SCHEMA::[Schema1] TO [public]
+GO
+
+GRANT CONTROL ON SCHEMA::[Schema1] TO [public]
+GO
+
+DENY DELETE ON SCHEMA::[Schema1] TO [public]
+GO

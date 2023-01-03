@@ -1,6 +1,6 @@
 ﻿using System.Text;
 
-namespace Bb.SqlServer.Structures
+namespace Bb.SqlServer
 {
 
     public class Writer
@@ -37,33 +37,7 @@ namespace Bb.SqlServer.Structures
             _sb.AppendLine("GO");
             _sb.AppendLine();
             return this;
-        }
-
-        public Writer AppendLabelEndline(params string[] values)
-        {
-            AppendLabel(values);
-            AppendEndLine();
-            return this;
-        }
-
-        public Writer AppendLabel(params string[] values)
-        {
-
-            bool dot = false;
-            foreach (var item in values)
-            {
-                if (!string.IsNullOrEmpty(item))
-                {
-                    if (dot)
-                        _sb.Append('.');
-                    _sb.Append($"[{item}]");
-                    dot = true;
-                }
-            }
-
-            return this;
-
-        }
+        }                              
 
         public string FormatLabel(params string[] values)
         {

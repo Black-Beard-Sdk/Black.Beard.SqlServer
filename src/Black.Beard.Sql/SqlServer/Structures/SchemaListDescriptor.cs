@@ -2,16 +2,16 @@
 {
 
 
-    public class SchemaDescriptorListDescriptor : List<SchemaDescriptor>
+    public class SchemaListDescriptor : List<SchemaDescriptor>
     {
 
-        public SchemaDescriptorListDescriptor() : base()
+        public SchemaListDescriptor() : base()
         {
 
         }
 
 
-        public SchemaDescriptorListDescriptor(int capacity) : base(capacity)
+        public SchemaListDescriptor(int capacity) : base(capacity)
         {
 
         }

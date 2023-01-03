@@ -295,6 +295,40 @@ namespace Bb.SqlServerStructures
 
         }
 
+
+        public void WriteBulk(DbDataReader reader, string targetTable, params (string, string)[] mappings)
+        {
+
+            using (var cnx = GetConnexion())
+            using (var transaction = cnx.BeginTransaction())
+            {
+                WriteBulk(transaction, reader, targetTable, mappings);
+                transaction.Commit();
+            }
+
+        }
+
+        public void WriteBulk(SqlTransaction transaction, DbDataReader reader, string targetTable, params (string, string)[] mappings)
+        {
+
+            using (var bulkCopy = new SqlBulkCopy(transaction.Connection, SqlBulkCopyOptions.Default, transaction)
+            {
+                DestinationTableName = targetTable,
+                BulkCopyTimeout = 60,
+                BatchSize = 50000,
+                EnableStreaming = true,
+            })
+            {
+
+                foreach (var item in mappings)
+                    bulkCopy.ColumnMappings.Add(new SqlBulkCopyColumnMapping(item.Item1, item.Item2));
+
+                bulkCopy.WriteToServer(reader);
+
+            }               
+
+        }
+
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)

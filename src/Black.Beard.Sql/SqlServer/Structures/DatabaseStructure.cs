@@ -15,7 +15,7 @@ namespace Bb.SqlServer.Structures
         public DatabaseStructure()
         {
             Tables = new TableListDescriptor();
-            Schemas = new SchemaDescriptorListDescriptor();
+            Schemas = new SchemaListDescriptor();
             FileGroups = new FileGroupListDescriptor();
         }
 
@@ -87,7 +87,7 @@ namespace Bb.SqlServer.Structures
               
         public TableListDescriptor Tables { get; }
 
-        public SchemaDescriptorListDescriptor Schemas { get; }
+        public SchemaListDescriptor Schemas { get; }
 
         public FileGroupListDescriptor FileGroups { get; }
 

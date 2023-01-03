@@ -33,6 +33,12 @@ namespace Bb.SqlServer.Structures
                 c.Parse(this._structure);
             }
 
+            var i = new CreateFilegroup(writer, _ctx, this.PathDatabaseFolder);
+            i.Parse(this._structure);
+
+            var j = new CreateSchemas(writer, _ctx); 
+            j.Parse(this._structure);
+
             var d = new CreateTable(writer, _ctx);
             d.Parse(this._structure);
 

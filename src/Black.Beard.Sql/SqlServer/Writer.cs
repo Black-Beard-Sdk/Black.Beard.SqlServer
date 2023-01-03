@@ -41,6 +41,11 @@ namespace Bb.SqlServer
 
         public string FormatLabel(params string[] values)
         {
+            return ToLabel(values);
+        }
+
+        public static string ToLabel(params string[] values)
+        {
 
             var sb = new StringBuilder();
             bool dot = false;

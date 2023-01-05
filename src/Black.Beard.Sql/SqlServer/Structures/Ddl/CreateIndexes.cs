@@ -38,7 +38,7 @@ namespace Bb.SqlServer.Structures.Ddl
         private void Parse(TableDescriptor table)
         {
 
-            var targetTable = this._ctx.TargetState?.GetTable(table.Schema, table.Name);
+            var targetTable = this._ctx.CurrentState?.GetTable(table.Schema, table.Name);
 
             foreach (IndexDescriptor index in table.Indexes)
             {

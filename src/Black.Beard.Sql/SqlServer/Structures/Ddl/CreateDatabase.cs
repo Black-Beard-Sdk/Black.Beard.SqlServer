@@ -1,4 +1,5 @@
-﻿using Bb.SqlServer.Structures;
+﻿using Bb.SqlServer.Queries;
+using Bb.SqlServer.Structures;
 using Bb.SqlServer.Structures.Dacpacs;
 using SharpCompress.Writers;
 using System.IO;
@@ -22,72 +23,94 @@ namespace Bb.SqlServer.Structures.Ddl
         internal void Parse(DatabaseStructure structure)
         {
 
+
             string path = GetPath();
 
             var name = this._ctx.ReplaceVariables(structure.DatabaseName);
 
+            CommentLine("Create database ", name);
+
             AppendEndLine();
             Use("master");
+            Go();
 
-            AppendEndLine("CREATE DATABASE ", AsLabel(name));
+            AppendEndLine("DECLARE @noExists BIT;");
+            AppendEndLine("SET @noExists = 0;");
+            AppendEndLine(TextQueries.TestDatabaseNoExists(structure.DatabaseName));
+            using (Indent())
+                AppendEndLine("SET @noExists = 1;");
+            AppendEndLine();
+
+            AppendEndLine("IF (@noExists = 1)");
+            AppendEndLine("BEGIN");
             using (Indent())
             {
 
-                Append("CONTAINMENT = ");
-                if (structure.ContainmentType == ContainmentEnum.NONE)
-                    AppendEndLine("NONE");
-                else
-                    AppendEndLine("PARTIAL");
-
-                AppendEndLine("ON PRIMARY");
-                using (IndentWithParentheses(true))
+                AppendEndLine("CREATE DATABASE ", AsLabel(name));
+                using (Indent())
                 {
-                    AppendEndLine($"NAME = N'{name}',");
-                    AppendEndLine($"FILENAME = N'{Path.Combine(path, name)}.mdf',");
-                    AppendEndLine($"SIZE = 8192KB,");
-                    AppendEndLine($"FILEGROWTH = 65536KB");
+
+                    Append("CONTAINMENT = ");
+                    if (structure.ContainmentType == ContainmentEnum.NONE)
+                        AppendEndLine("NONE");
+                    else
+                        AppendEndLine("PARTIAL");
+
+                    AppendEndLine("ON PRIMARY");
+                    using (IndentWithParentheses(true))
+                    {
+                        AppendEndLine($"NAME = N'{name}',");
+                        AppendEndLine($"FILENAME = N'{Path.Combine(path, name)}.mdf',");
+                        AppendEndLine($"SIZE = 8192KB,");
+                        AppendEndLine($"FILEGROWTH = 65536KB");
+                    }
+
+                    AppendEndLine("LOG ON");
+                    using (IndentWithParentheses(true))
+                    {
+                        AppendEndLine($"NAME = N'{name}_log',");
+                        AppendEndLine($"FILENAME = N'{Path.Combine(path, name)}_log.ldf',");
+                        AppendEndLine($"SIZE = 8192KB,");
+                        AppendEndLine($"FILEGROWTH = 65536KB");
+                    }
+
+                    AppendEndLine();
+
                 }
 
-                AppendEndLine("LOG ON");
-                using (IndentWithParentheses(true))
-                {
-                    AppendEndLine($"NAME = N'{name}_log',");
-                    AppendEndLine($"FILENAME = N'{Path.Combine(path, name)}_log.ldf',");
-                    AppendEndLine($"SIZE = 8192KB,");
-                    AppendEndLine($"FILEGROWTH = 65536KB");
-                }
+
+                WriteSetProperty(name, c => c.CompatibilityLevel, structure);
+                WriteSetProperty(name, c => c.AnsiNullDefault, structure);
+                WriteSetProperty(name, c => c.AnsiNulls, structure);
+                WriteSetProperty(name, c => c.AnsiPadding, structure);
+                WriteSetProperty(name, c => c.AnsiWarnings, structure);
+                WriteSetProperty(name, c => c.Arithabort, structure);
+                WriteSetProperty(name, c => c.AutoClose, structure);
+                WriteSetProperty(name, c => c.AutoShrink, structure);
+                WriteSetProperty(name, c => c.AutoUpdateStatistics, structure);
+                WriteSetProperty(name, c => c.CursorCloseOnCommit, structure);
+                WriteSetProperty(name, c => c.CursorDefault, structure);
+                WriteSetProperty(name, c => c.ConcatNullYieldsNull, structure);
+                WriteSetProperty(name, c => c.NumericRoundAbort, structure);
+                WriteSetProperty(name, c => c.QuotedIdentifier, structure);
+                WriteSetProperty(name, c => c.RecursiveTriggers, structure);
+                WriteSetProperty(name, c => c.AutoUpdateStatisticsAsync, structure);
+                WriteSetProperty(name, c => c.DateCorrelationOptimization, structure);
+                WriteSetProperty(name, c => c.Parametrization, structure);
+                WriteSetProperty(name, c => c.ReadCommitedSnapShot, structure);
+                WriteSetProperty(name, c => c.DatabaseReadOnly, structure);
+                WriteSetProperty(name, c => c.Recovery, structure);
+                WriteSetProperty(name, c => c.RestrictAccess, structure);
+                WriteSetProperty(name, c => c.PageVerify, structure);
+                WriteSetProperty(name, c => c.TargetRecoveryTimeInSecond, structure);
+                WriteSetProperty(name, c => c.Broker, structure);
+                // WriteSetProperty(name, c => c.AutoCreateStatistics, structure);
 
             }
+
+            AppendEndLine("END");
+
             Go();
-
-
-            WriteSetProperty(name, c => c.CompatibilityLevel, structure);
-            WriteSetProperty(name, c => c.AnsiNullDefault, structure);
-            WriteSetProperty(name, c => c.AnsiNulls, structure);
-            WriteSetProperty(name, c => c.AnsiPadding, structure);
-            WriteSetProperty(name, c => c.AnsiWarnings, structure);
-            WriteSetProperty(name, c => c.Arithabort, structure);
-            WriteSetProperty(name, c => c.AutoClose, structure);
-            WriteSetProperty(name, c => c.AutoShrink, structure);
-            WriteSetProperty(name, c => c.AutoUpdateStatistics, structure);
-            WriteSetProperty(name, c => c.CursorCloseOnCommit, structure);
-            WriteSetProperty(name, c => c.CursorDefault, structure);
-            WriteSetProperty(name, c => c.ConcatNullYieldsNull, structure);
-            WriteSetProperty(name, c => c.NumericRoundAbort, structure);
-            WriteSetProperty(name, c => c.QuotedIdentifier, structure);
-            WriteSetProperty(name, c => c.RecursiveTriggers, structure);
-            WriteSetProperty(name, c => c.AutoUpdateStatisticsAsync, structure);
-            WriteSetProperty(name, c => c.DateCorrelationOptimization, structure);
-            WriteSetProperty(name, c => c.Parametrization, structure);
-            WriteSetProperty(name, c => c.ReadCommitedSnapShot, structure);
-            WriteSetProperty(name, c => c.DatabaseReadOnly, structure);
-            WriteSetProperty(name, c => c.Recovery, structure);
-            WriteSetProperty(name, c => c.RestrictAccess, structure);
-            WriteSetProperty(name, c => c.PageVerify, structure);
-            WriteSetProperty(name, c => c.TargetRecoveryTimeInSecond, structure);
-            WriteSetProperty(name, c => c.Broker, structure);
-            // WriteSetProperty(name, c => c.AutoCreateStatistics, structure);
-
 
             Use(name);
 
@@ -108,6 +131,7 @@ namespace Bb.SqlServer.Structures.Ddl
             Use(name);
 
         }
+
 
         private string GetPath()
         {
@@ -141,7 +165,6 @@ namespace Bb.SqlServer.Structures.Ddl
                         return p.FullName;
                 }
 
-
             }
 
             return new FileInfo(Assembly.GetExecutingAssembly().Location).Directory.FullName;
@@ -166,8 +189,7 @@ namespace Bb.SqlServer.Structures.Ddl
 
 
             }
-
-            Go();
+            // Go();
 
         }
 

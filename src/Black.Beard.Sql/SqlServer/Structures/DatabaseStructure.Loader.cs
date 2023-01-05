@@ -9,7 +9,6 @@ using static System.Formats.Asn1.AsnWriter;
 namespace Bb.SqlServer.Structures
 {
 
-
     public partial class DatabaseStructure
     {
 
@@ -19,10 +18,18 @@ namespace Bb.SqlServer.Structures
 
             DatabaseStructure str = new DatabaseStructure();
 
-            LoadTables(setting, str);
-            LoadIndexes(setting, str);
-            LoadFileGroups(setting, str);
-            LoadSchemas(setting, str);
+            try
+            {
+                LoadTables(setting, str);
+                LoadIndexes(setting, str);
+                LoadFileGroups(setting, str);
+                LoadSchemas(setting, str);
+                LoadForeign(setting, str);
+            }
+            catch (SqlException e)
+            {
+        
+            }
 
             return str;
 
@@ -33,7 +40,7 @@ namespace Bb.SqlServer.Structures
 
             var processor = setting.CreateProcessor();
 
-            foreach (var reader in processor.Read<ColumnStructures>(Query.Structures.Replace("$dbId", processor.ConnectionBuilder.InitialCatalog)))
+            foreach (var reader in processor.Read<ColumnStructures>(TextQueries.Structures.Replace("$dbId", processor.ConnectionBuilder.InitialCatalog)))
             {
 
                 var schemaName = reader.GetString(ColumnStructures.Schema);
@@ -51,7 +58,8 @@ namespace Bb.SqlServer.Structures
                     Name = reader.GetString(ColumnStructures.column_name),
                     Caption = reader.GetString(ColumnStructures.Description),
                     AllowNull = reader.GetBoolean(ColumnStructures.is_nullable),
-                    Type = SqlTypeDescriptor.Create(
+                    Type = SqlTypeDescriptor.Create
+                    (
                         reader.GetString(ColumnStructures.system_data_type),
                         reader.GetBoolean(ColumnStructures.is_identity),
                         reader.GetInt32(ColumnStructures.max_length),
@@ -67,12 +75,51 @@ namespace Bb.SqlServer.Structures
             }
         }
 
+        private static void LoadForeign(ConnectionStringSetting setting, DatabaseStructure str)
+        {
+
+            var processor = setting.CreateProcessor();
+
+            foreach (var reader in processor.Read<ForeignColumns>(TextQueries.ForeignKeys.Replace("$dbId", processor.ConnectionBuilder.InitialCatalog)))
+            {
+
+                var schemaNameFk = reader.GetString(ForeignColumns.foreign_schema);
+                var tableNameFk = reader.GetString(ForeignColumns.foreign_table);
+                var table = str.GetTable(schemaNameFk, tableNameFk);
+
+                if (table == null)
+                {
+                    table = new TableDescriptor() { Schema = schemaNameFk, Name = tableNameFk };
+                    str.Tables.Add(table);
+                }
+
+                var fk_constraint_name = reader.GetString(ForeignColumns.fk_constraint_name);
+                var constraint = table.GetForeignKey(fk_constraint_name);
+
+                if (constraint == null)
+                {
+
+                    constraint = new ForeignKeyDescriptor() { Name = fk_constraint_name };
+                    constraint.RemoteColumns.Schema = reader.GetString(ForeignColumns.primary_schema);
+                    constraint.RemoteColumns.TableName = reader.GetString(ForeignColumns.primary_table);
+                    constraint.OnDeleteCascade = reader.GetBoolean(ForeignColumns.on_delete);
+                    constraint.OnUpdateCascade = reader.GetBoolean(ForeignColumns.on_update);
+                    table.AddForeignKey(constraint);
+
+                }
+
+                constraint.AddLocalColumns(reader.GetString(ForeignColumns.fk_column_name));
+                constraint.AddRemoteColumns(reader.GetString(ForeignColumns.pk_column_name));
+
+            }
+        }
+
         private static void LoadIndexes(ConnectionStringSetting setting, DatabaseStructure str)
         {
 
             var processor = setting.CreateProcessor();
 
-            foreach (var reader in processor.Read<IndexColumns>(Query.Indexes))
+            foreach (var reader in processor.Read<IndexColumns>(TextQueries.Indexes))
             {
 
                 var schemaName = reader.GetString(IndexColumns.schema_name);
@@ -134,7 +181,7 @@ namespace Bb.SqlServer.Structures
 
             var processor = setting.CreateProcessor();
 
-            foreach (var reader in processor.Read<FileGroupColumns>(Query.Filegroups))
+            foreach (var reader in processor.Read<FileGroupColumns>(TextQueries.Filegroups))
             {
 
                 var name = reader.GetString(FileGroupColumns.Name);
@@ -158,10 +205,10 @@ namespace Bb.SqlServer.Structures
 
             var processor = setting.CreateProcessor();
 
-            foreach (var reader in processor.Read<SchemaColumns>(Query.Schemas))
+            foreach (var reader in processor.Read<SchemaColumns>(TextQueries.Schemas))
             {
 
-                var name = reader.GetString( SchemaColumns.SCHEMA_NAME);
+                var name = reader.GetString(SchemaColumns.SCHEMA_NAME);
 
                 var schema = str.GetSchema(name);
                 if (schema == null)
@@ -212,58 +259,3 @@ namespace Bb.SqlServer.Structures
     }
 
 }
-
-
-/*
-         private static void LoadPrimaryKeys(ConnectionStringSetting setting, DatabaseStructure str)
-        {
-
-            var processor = setting.CreateProcessor();
-
-            foreach (var reader in processor.Read(Query.Keys))
-            {
-
-                var schemaName = reader.GetString((int)ColumnKeys.schema_name);
-                var tableName = reader.GetString((int)ColumnKeys.table_name);
-
-                var table = str.GetTable(schemaName, tableName);
-                if (table != null)
-                {
-
-                    var type = reader.GetString((int)IndexColumns.index_type);
-
-                    var key = new PrimaryKeyDescriptor() 
-                    {
-                        Name = reader.GetString((int)ColumnKeys.pk_name),
-                        Clustered = type == "Clustered index",
-                        Unique = reader.GetBoolean((int)IndexColumns.is_unique),
-                    };
-
-                    key.Properties.PadIndex = reader.GetBoolean((int)IndexColumns.is_padded);
-                    key.Properties.StatisticsNorecompute = reader.GetBoolean((int)IndexColumns.no_recompute);
-                    key.Properties.AllowRowLocks = reader.GetBoolean((int)IndexColumns.allow_row_locks);
-                    key.Properties.AllowPageLocks = reader.GetBoolean((int)IndexColumns.allow_page_locks);
-                    key.Properties.OptimizeForSequentialKey = reader.GetBoolean((int)IndexColumns.optimize_sequential_key);
-
-
-                    var columns = reader.GetString((int)ColumnKeys.columns).Split(',');
-                    var descendings = reader.GetString((int)ColumnKeys.column_descendings).Split(',');
-
-                    for (int i = 0; i < columns.Length; i++)
-                    {
-
-                        key.Add(new IndexedColumnReferenceDescriptor()
-                        {
-                            Name = columns[i].Trim(),
-                            Sort = descendings[i].Trim() == "1" ? SortIndex.Descending : SortIndex.Ascending,
-                        });
-                    }
-
-                    table.Keys.Add(key);
-
-                }
-
-            }
-        }
-
- */

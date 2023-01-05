@@ -19,14 +19,15 @@ namespace Bb.SqlServer.Structures.Ddl
         internal void Parse(DatabaseStructure structure)
         {
 
-            Parse(structure.Schemas);
+            CommentLine("Create schemas");
+
+            Parse(structure.Schemas.Where(c => c.Name != "dbo").ToList());
 
         }
 
 
-        private void Parse(SchemaListDescriptor schemas)
+        private void Parse(List<SchemaDescriptor> schemas)
         {
-
             foreach (var schema in schemas)
             {
 
@@ -38,9 +39,10 @@ namespace Bb.SqlServer.Structures.Ddl
                         AppendEndLine("AUTHORIZATION ", AsLabel(this._ctx.ReplaceVariables(schema.Parent)));
                     }
 
+                Go();
+
             }
 
-            Go();
 
 
         }

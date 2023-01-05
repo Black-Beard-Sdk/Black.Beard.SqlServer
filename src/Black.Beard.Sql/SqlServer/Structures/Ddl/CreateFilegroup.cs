@@ -21,27 +21,30 @@ namespace Bb.SqlServer.Structures.Ddl
         internal void Parse(DatabaseStructure structure)
         {
 
-            Parse(structure.DatabaseName, structure.FileGroups);
+            CommentLine("Create filegroups");
+
+            Parse(structure.DatabaseName, structure.FileGroups.Where(c => c.Name != "PRIMARY" && c.Name != "SECONDARY").ToList());
 
         }
 
 
-        private void Parse(string databaseName, FileGroupListDescriptor fileGroups)
+        private void Parse(string databaseName, List<FileGroupDescriptor> fileGroups)
         {
-
-            AppendEndLine("ALTER DATABASE ", AsLabel(this._ctx.ReplaceVariables(databaseName)));
-            using (Indent())
+            if (fileGroups.Any())
             {
+                AppendEndLine("ALTER DATABASE ", AsLabel(this._ctx.ReplaceVariables(databaseName)));
+                using (Indent())
+                {
 
-                AppendEndLine("ADD FILE");
+                    AppendEndLine("ADD FILE");
 
-                foreach (var group in fileGroups)
-                    ParseFile(group);
-                
-                Go();
+                    foreach (var group in fileGroups)
+                        ParseFile(group);
 
+                    Go();
+
+                }
             }
-
         }
 
         private void ParseFile(FileGroupDescriptor group)

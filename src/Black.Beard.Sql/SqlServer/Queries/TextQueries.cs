@@ -4,72 +4,22 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 // https://dataedo.com/kb/query/sql-server
 namespace Bb.SqlServer.Queries
 {
 
-    public enum ColumnStructures
+    public class TextQueries
     {
-        Schema,
-        table_name,
-        column_name,
-        system_data_type,
-        max_length,
-        precision,
-        scale,
-        is_filestream,
-        is_computed,
-        is_identity,
-        is_rowguidcol,
-        is_ansi_padded,
-        collation_name,
-        is_nullable,
-        Description,
-        Seed,
-        Increment
-    }
 
-    public enum IndexColumns
-    {
-        name,
-        schema_name,
-        tableView, 
-        object_type,
-        is_primary,
-        is_unique,
-        is_padded,
-        allow_page_locks,
-        allow_row_locks,
-        optimize_sequential_key,
-        no_recompute,
-        columns,
-        column_descendings,
-        index_type,
-        Filegroup
-    }
+        public static string TestDatabaseNoExists(string databaseName) => $"IF NOT EXISTS (SELECT name FROM master.sys.databases WHERE name = N'{databaseName}')";
+        public static string TestConstraintExists(string constraintName) => $"IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE CONSTRAINT_NAME='{constraintName}')";
 
-    public enum FileGroupColumns
-    {
-        DataSpaceId, 
-        Name, 
-        Type,
-        isDdefault,
-        isSystem,
-        isRead_only,
-        isAutogrowAllFiles,
-        filegroupGuid,
-        logFilegroupId
-    }
+        public static string TestTableExists(string schema, string table) => $"IF NOT EXISTS (SELECT schema_name(t.schema_id) AS schemaName, t.name AS table_name FROM sys.tables t WHERE t.name = '{table}' AND schema_name(t.schema_id) = '{schema}')";
 
-    public enum SchemaColumns
-    {
-        SCHEMA_NAME, 
-        SCHEMA_OWNER
-    }
+        public static string TestIndexExists(string name) => $"SELECT * FROM sys.indexes pk where name = '{name}'";
 
-    public class Query
-    {
 
         public static string Schemas = @"SELECT SCHEMA_NAME, SCHEMA_OWNER from information_schema.SCHEMATA";
 
@@ -171,32 +121,41 @@ order by
 ";
 
         public static string ForeignKeys = @"
-
 SELECT 
-	schema_name(fk_tab.schema_id) + '.' + fk_tab.name AS foreign_table,    
-    schema_name(pk_tab.schema_id) + '.' + pk_tab.name AS primary_table,
-    substring(column_names, 1, len(column_names)-1) AS [fk_columns],
-    fk.name as fk_constraint_name
+	schema_name(fk_tab.schema_id) as foreign_schema,
+	fk_tab.name as foreign_table,
+    schema_name(pk_tab.schema_id) as primary_schema,
+	pk_tab.name as primary_table,
+    fk_cols.constraint_column_id as no, 
+    fk_col.name as fk_column_name,
+    pk_col.name as pk_column_name,
+    fk.name as fk_constraint_name,
+	fk.update_referential_action,
+	fk.delete_referential_action
 
 FROM sys.foreign_keys fk
-    inner join sys.tables fk_tab ON fk_tab.object_id = fk.parent_object_id
-    inner join sys.tables pk_tab ON pk_tab.object_id = fk.referenced_object_id
-    cross apply (SELECT col.[name] + ', '
-                 
-				 FROM sys.foreign_key_columns fk_c
-					INNER JOIN sys.columns col ON fk_c.parent_object_id = col.object_id
-												AND fk_c.parent_column_id = col.column_id
 
-                 WHERE fk_c.parent_object_id = fk_tab.object_id
-						AND fk_c.constraint_object_id = fk.object_id
-                 
-				 ORDER BY col.column_id
+    INNER JOIN sys.tables fk_tab
+        ON fk_tab.object_id = fk.parent_object_id
 
-                 FOR XML PATH ('') ) D (column_names)
+    INNER JOIN sys.tables pk_tab
+        ON pk_tab.object_id = fk.referenced_object_id
+
+    INNER JOIN sys.foreign_key_columns fk_cols
+        ON fk_cols.constraint_object_id = fk.object_id
+
+    INNER JOIN sys.columns fk_col
+        ON fk_col.column_id = fk_cols.parent_column_id
+        AND fk_col.object_id = fk_tab.object_id
+
+    INNER JOIN sys.columns pk_col
+        ON pk_col.column_id = fk_cols.referenced_column_id
+        AND pk_col.object_id = pk_tab.object_id
 
 ORDER BY 
 	schema_name(fk_tab.schema_id) + '.' + fk_tab.name,
-    schema_name(pk_tab.schema_id) + '.' + pk_tab.name
+    schema_name(pk_tab.schema_id) + '.' + pk_tab.name, 
+    fk_cols.constraint_column_id
 
 ";
 

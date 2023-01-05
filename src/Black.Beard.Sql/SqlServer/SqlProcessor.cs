@@ -69,22 +69,23 @@ namespace Bb.SqlServerStructures
                     {
 
                         foreach (var script in item)
-                        {
-                            currentScript = script;
-                            using (var cmd = Getcommand(cnx, script.ToString(), parameters))
+                            if (!script.IsEmpty)
                             {
-                                cmd.Connection = cnx;
-                                if (transaction != null)
-                                    cmd.Transaction = transaction;
+                                currentScript = script;
+                                using (var cmd = Getcommand(cnx, script.ToString(), parameters))
+                                {
+                                    cmd.Connection = cnx;
+                                    if (transaction != null)
+                                        cmd.Transaction = transaction;
 
-                                var i = cmd.ExecuteNonQuery();
-                                if (i > 0)
-                                    result.CountInpactedObjects += i;
+                                    var i = cmd.ExecuteNonQuery();
+                                    if (i > 0)
+                                        result.CountInpactedObjects += i;
 
-                                result.Success = true;
+                                    result.Success = true;
 
+                                }
                             }
-                        }
                     }
                     catch (Exception e)
                     {
@@ -325,7 +326,7 @@ namespace Bb.SqlServerStructures
 
                 bulkCopy.WriteToServer(reader);
 
-            }               
+            }
 
         }
 

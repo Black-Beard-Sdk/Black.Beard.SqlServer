@@ -14,6 +14,7 @@ namespace Bb.SqlServerStructures
             this.Position = position;
             _sql = new StringBuilder(value.Trim());
 
+            IsEmpty = _sql.Length == 0;
             IsCreateDatabase = _createDatabase.IsMatch(_sql.ToString());
             IsAlterDatabase = _alterDatabase.IsMatch(_sql.ToString());
             IsUseDatabase = _useDatabase.IsMatch(_sql.ToString());
@@ -29,8 +30,12 @@ namespace Bb.SqlServerStructures
 
         private StringBuilder _sql;
 
+        public bool IsEmpty { get; }
+
         public bool IsCreateDatabase { get; }
+
         public bool IsAlterDatabase { get; }
+
         public bool IsUseDatabase { get; }
 
 

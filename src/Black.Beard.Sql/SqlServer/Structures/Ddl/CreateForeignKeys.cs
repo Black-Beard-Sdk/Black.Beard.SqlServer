@@ -1,4 +1,5 @@
-﻿using Bb.SqlServer.Structures;
+﻿using Bb.SqlServer.Queries;
+using Bb.SqlServer.Structures;
 using Bb.SqlServer.Structures.Dacpacs;
 
 namespace Bb.SqlServer.Structures.Ddl
@@ -6,7 +7,7 @@ namespace Bb.SqlServer.Structures.Ddl
     public class CreateForeignKeys : DdlBase
     {
 
-        public CreateForeignKeys(Writer writer, ScriptContext ctx) : base (writer, ctx)
+        public CreateForeignKeys(Writer writer, ScriptContext ctx) : base(writer, ctx)
         {
 
         }
@@ -23,12 +24,6 @@ namespace Bb.SqlServer.Structures.Ddl
         private void Parse(TableListDescriptor tables)
         {
 
-            AppendEndLine("SET ANSI_NULLS ON");
-            Go();
-
-            AppendEndLine("SET QUOTED_IDENTIFIER ON");
-            Go();
-
             foreach (var table in tables)
                 Parse(table);
 
@@ -37,7 +32,7 @@ namespace Bb.SqlServer.Structures.Ddl
         private void Parse(TableDescriptor table)
         {
 
-            var targetTable = this._ctx.TargetState?.GetTable(table.Schema, table.Name);
+            var targetTable = this._ctx.CurrentState?.GetTable(table.Schema, table.Name);
 
             foreach (ForeignKeyDescriptor foreign in table.ForeignKeys)
             {
@@ -63,32 +58,25 @@ namespace Bb.SqlServer.Structures.Ddl
         private void Parse(TableDescriptor table, ForeignKeyDescriptor foreign)
         {
 
-            /*
-             * 
-    ALTER TABLE Sales.TempSalesReason
-        ADD CONSTRAINT FK_TempSales_SalesReason 
-            FOREIGN KEY 
-            (
-                TempID
-            )
-            REFERENCES Sales.SalesReason 
-            (
-                SalesReasonID
-            )
-            ON DELETE CASCADE
-            ON UPDATE CASCADE
-;
-             
-             */
+            AppendEndLine(TextQueries.TestConstraintExists(foreign.Name));
+            using (Indent())
+            {
+                AppendEndLine("ALTER TABLE ", AsLabel(table.Schema, table.Name));
+                using (Indent())
+                {
+                    AppendEndLine("DROP CONSTRAINT ", AsLabel(foreign.Name));
+                }
+            }
+            Go();
 
             AppendEndLine("ALTER TABLE ", AsLabel(table.Schema, table.Name));
             using (Indent())
             {
-                
+
                 AppendEndLine("ADD CONSTRAINT ", AsLabel(foreign.Name));
                 using (Indent())
                 {
-                
+
                     AppendEndLine("FOREIGN KEY ");
                     using (IndentWithParentheses())
                     {
@@ -105,13 +93,13 @@ namespace Bb.SqlServer.Structures.Ddl
                             Append(AsLabel(column.Name));
                             f = true;
                         }
-                    AppendEndLine();
+                        AppendEndLine();
                     }
 
                     AppendEndLine();
 
                     AppendEndLine("REFERENCES ", AsLabel(foreign.RemoteColumns.Schema, foreign.RemoteColumns.TableName));
-                    
+
                     using (IndentWithParentheses())
                     {
                         AppendEndLine();
@@ -130,6 +118,14 @@ namespace Bb.SqlServer.Structures.Ddl
                         AppendEndLine();
 
                     }
+                    AppendEndLine();
+
+                    if (foreign.OnDeleteCascade)
+                        AppendEndLine("ON DELETE CASCADE");
+
+                    if (foreign.OnUpdateCascade)
+                        AppendEndLine("ON UPDATE CASCADE");
+
                 }
                 AppendEndLine();
 

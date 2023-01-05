@@ -1,4 +1,5 @@
-﻿using Bb.SqlServer.Structures;
+﻿using Bb.SqlServer.Queries;
+using Bb.SqlServer.Structures;
 using Bb.SqlServer.Structures.Dacpacs;
 using System;
 
@@ -16,6 +17,8 @@ namespace Bb.SqlServer.Structures.Ddl
         internal void Parse(DatabaseStructure structure)
         {
 
+            CommentLine("Create tables");
+
             Parse(structure.Tables);
 
         }
@@ -31,7 +34,7 @@ namespace Bb.SqlServer.Structures.Ddl
             Go();
 
             foreach (var table in tables)
-                if (this._ctx.TargetState?.GetTable(table.Schema, table.Name) == null)
+                if (_ctx.CreateAllTables || this._ctx.CurrentState?.GetTable(table.Schema, table.Name) == null)
                     Parse(table);
 
         }
@@ -39,14 +42,22 @@ namespace Bb.SqlServer.Structures.Ddl
         private void Parse(TableDescriptor table)
         {
 
-            AppendEndLine("CREATE TABLE ", AsLabel(table.Schema, table.Name));
-            using (IndentWithParentheses())
+            AppendEndLine(TextQueries.TestTableExists(table.Schema, table.Name));
+            using (Indent())
             {
-                AppendEndLine();
-                Parse(table.Columns);
-                Parse(table.Keys[0]);
+
+                AppendEndLine("CREATE TABLE ", AsLabel(table.Schema, table.Name));
+                
+                using (IndentWithParentheses())
+                {
+                    AppendEndLine();
+                    Parse(table.Columns);
+                    Parse(table.Keys[0]);
+                }
+
+                AppendEndLine(" ON ", AsLabel(table.PartitionSchemeName));
+
             }
-            AppendEndLine(" ON ", AsLabel(table.PartitionSchemeName));
 
             Go();
 
@@ -58,7 +69,7 @@ namespace Bb.SqlServer.Structures.Ddl
             AppendEndLine(", ");
 
             AppendEndLine("CONSTRAINT ", AsLabel(key.Name), " PRIMARY KEY ", Evaluate(key.Clustered, CLUSTERED, NONCLUSTERED), " ");
-                      
+
             using (IndentWithParentheses(true))
             {
                 AppendEndLine();
@@ -69,7 +80,7 @@ namespace Bb.SqlServer.Structures.Ddl
 
                     if (f)
                         AppendEndLine(", ");
-                  
+
                     Append(AsLabel(item.Name), " ", Evaluate(item.Sort == SortIndex.Ascending, ASC, DESC));
                     f = true;
                 }

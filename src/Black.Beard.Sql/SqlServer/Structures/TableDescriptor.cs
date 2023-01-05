@@ -44,31 +44,39 @@
         public TableDescriptor AddForeignKey(string? constraintName, string remoteSchema, string remoteTable, Action<ForeignKeyDescriptor> action)
         {
 
+
             if (string.IsNullOrEmpty(constraintName) || string.IsNullOrWhiteSpace(remoteSchema))
             {
-                constraintName = $"{remoteSchema}.{remoteTable}_has_{this.Schema}.{this.Name}";
+                constraintName = $"{remoteSchema}_{remoteTable}_has_{this.Schema}_{this.Name}";
                 if (constraintName.Length > 128)
                     constraintName = $"{remoteTable}_has_{this.Name}";
             }
 
-            var f = new ForeignKeyDescriptor()
+            var foreignKey = new ForeignKeyDescriptor()
             {
                 Name = constraintName,
             };
 
-            f.RemoteColumns.Schema = remoteSchema ?? Schema;
-            f.RemoteColumns.TableName = remoteTable;
-            ForeignKeys.Add(f);
+            foreignKey.RemoteColumns.Schema = remoteSchema ?? Schema;
+            foreignKey.RemoteColumns.TableName = remoteTable;
 
-            action(f);
+            AddForeignKey(foreignKey);
+
+            action(foreignKey);
 
             return this;
 
         }
 
+        public TableDescriptor AddForeignKey(ForeignKeyDescriptor foreignKey)
+        {
+            ForeignKeys.Add(foreignKey);
+            return this;
+        }
 
         public TableDescriptor SetFilegroupOnPrimaryKeys(string fileGroup)
         {
+
             PrimaryKeyDescriptor k;
             if (Keys.Count == 0)
                 k = new PrimaryKeyDescriptor();

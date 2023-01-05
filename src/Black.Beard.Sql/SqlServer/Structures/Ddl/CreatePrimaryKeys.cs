@@ -17,6 +17,8 @@ namespace Bb.SqlServer.Structures.Ddl
         internal void Parse(DatabaseStructure structure)
         {
 
+            CommentLine("Create primary key");
+
             Parse(structure.Tables);
 
         }
@@ -32,9 +34,9 @@ namespace Bb.SqlServer.Structures.Ddl
             Go();
 
             foreach (var table in tables)
-                if (this._ctx.TargetState != null)
+                if (this._ctx.CurrentState != null)
                 {
-                    var targetTable = this._ctx.TargetState.GetTable(table.Schema, table.Name);
+                    var targetTable = this._ctx.CurrentState.GetTable(table.Schema, table.Name);
                     if (targetTable != null)
                     {
 
@@ -74,14 +76,13 @@ namespace Bb.SqlServer.Structures.Ddl
         private void Parse(PrimaryKeyDescriptor key)
         {
 
-            AppendEndLine(", ");
+            Append("ADD CONSTRAINT ", AsLabel(key.Name), " PRIMARY KEY ");
 
-            Append("CONSTRAINT ", AsLabel(key.Name), " PRIMARY KEY ");
-
-            AppendEndLine(" ", Evaluate(key.Clustered, CLUSTERED, NONCLUSTERED), " ");
+            AppendEndLine(Evaluate(key.Clustered, CLUSTERED, NONCLUSTERED));
 
             using (IndentWithParentheses())
             {
+                AppendEndLine();
 
                 bool f = false;
 
@@ -100,7 +101,7 @@ namespace Bb.SqlServer.Structures.Ddl
 
                 AppendEndLine();
             }
-            AppendEndLine("WITH");
+            AppendEndLine(" WITH");
             using (IndentWithParentheses())
             {                
                 AppendEndLine($"PAD_INDEX = {Evaluate(key.Properties.PadIndex)},");

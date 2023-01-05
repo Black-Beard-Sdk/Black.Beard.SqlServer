@@ -9,11 +9,13 @@
         }
 
 
-        public DatabaseStructure? TargetState { get; set; }
+        public DatabaseStructure? CurrentState { get; set; }
 
         
         public bool CreateDatabase { get; set; }
 
+        
+        public bool CreateAllTables { get; set; }
 
         public string ReplaceVariables(string initialValue)
         {

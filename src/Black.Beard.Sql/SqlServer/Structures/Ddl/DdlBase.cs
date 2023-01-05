@@ -30,6 +30,13 @@ namespace Bb.SqlServer.Structures.Ddl
             return _writer.Indent(crlf);
         }
 
+        protected void CommentLine(params string[] comments)
+        {
+            Append(" -- ");
+            AppendEndLine(comments);
+        }
+
+
         public void AppendEndLine(params object[] values)
         {           
            _writer.AppendEndLine(values);

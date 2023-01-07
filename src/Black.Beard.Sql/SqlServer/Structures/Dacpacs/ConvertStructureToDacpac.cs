@@ -262,17 +262,15 @@ namespace Bb.SqlServer.Structures.Dacpacs
 
             };
 
-            var t = column.Type;
-            var typename = t.Type.SqlLabel.ToUpper();
-            SqlTypeWithPrecisionDescriptor type;
+            var t = column.SqlType;
+            var typename = t.SqlDataType.SqlLabel.ToUpper();
 
             switch (typename)
             {
 
 
                 case SqlTypeDescriptor._BINARY:
-                    type = t as SqlTypeWithPrecisionDescriptor ?? throw new Exception("Invalid type");
-                    tableSource.ColumnBinary(@namespace, tableName, columnName, allowNull, type.Argument1, action);
+                    tableSource.ColumnBinary(@namespace, tableName, columnName, allowNull, t.Argument1.Value, action);
                     break;
 
                 case SqlTypeDescriptor._DATETIME:
@@ -284,8 +282,7 @@ namespace Bb.SqlServer.Structures.Dacpacs
                     break;
 
                 case SqlTypeDescriptor._VARCHAR:
-                    type = t as SqlTypeWithPrecisionDescriptor ?? throw new Exception("Invalid type");
-                    tableSource.ColumnVarchar(@namespace, tableName, columnName, allowNull, type.Argument1, action);
+                    tableSource.ColumnVarchar(@namespace, tableName, columnName, allowNull, t.Argument1.Value, action);
                     break;
 
                 case SqlTypeDescriptor._UNIQUEIDENTIFIER:
@@ -313,18 +310,15 @@ namespace Bb.SqlServer.Structures.Dacpacs
                     break;
 
                 case SqlTypeDescriptor._NVARCHAR:
-                    type = t as SqlTypeWithPrecisionDescriptor ?? throw new Exception("Invalid type");
-                    tableSource.ColumnNVarchar(@namespace, tableName, columnName, allowNull, type.Argument1, action);
+                    tableSource.ColumnNVarchar(@namespace, tableName, columnName, allowNull, t.Argument1.Value, action);
                     break;
 
                 case SqlTypeDescriptor._NCHAR:
-                    type = t as SqlTypeWithPrecisionDescriptor ?? throw new Exception("Invalid type");
-                    tableSource.ColumnNChar(@namespace, tableName, columnName, allowNull, type.Argument1, action);
+                    tableSource.ColumnNChar(@namespace, tableName, columnName, allowNull, t.Argument1.Value, action);
                     break;
 
                 case SqlTypeDescriptor._CHAR:
-                    type = t as SqlTypeWithPrecisionDescriptor ?? throw new Exception("Invalid type");
-                    tableSource.ColumnChar(@namespace, tableName, columnName, allowNull, type.Argument1, action);
+                    tableSource.ColumnChar(@namespace, tableName, columnName, allowNull, t.Argument1.Value, action);
                     break;
 
                 case SqlTypeDescriptor._REAL:
@@ -380,13 +374,11 @@ namespace Bb.SqlServer.Structures.Dacpacs
                     break;
 
                 case SqlTypeDescriptor._VARBINARY:
-                    type = t as SqlTypeWithPrecisionDescriptor ?? throw new Exception("Invalid type");
-                    tableSource.ColumnVarBinary(@namespace, tableName, columnName, allowNull, type.Argument1, action);
+                    tableSource.ColumnVarBinary(@namespace, tableName, columnName, allowNull, t.Argument1.Value, action);
                     break;
 
                 case SqlTypeDescriptor._IMAGE:
-                    type = t as SqlTypeWithPrecisionDescriptor ?? throw new Exception("Invalid type");
-                    tableSource.ColumnImage(@namespace, tableName, columnName, allowNull, type.Argument1, action);
+                    tableSource.ColumnImage(@namespace, tableName, columnName, allowNull, t.Argument1.Value, action);
                     break;
 
                 //case SqlServer._ROWVERSION:

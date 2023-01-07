@@ -1,5 +1,6 @@
 ﻿using System.Data.SqlClient;
 using System.Data.SqlTypes;
+using System.Diagnostics.Metrics;
 using System.Xml.Linq;
 using Bb.SqlServer.Queries;
 using Bb.SqlServer.Structures.Dacpacs;
@@ -16,6 +17,9 @@ namespace Bb.SqlServer.Structures
         public static DatabaseStructure GetStructure(string databaseName, string schema)
         {
 
+            if (string.IsNullOrEmpty(schema))
+                schema = "dbo";
+
             return new DatabaseStructure()
             {
                 DatabaseName = databaseName,
@@ -31,44 +35,44 @@ namespace Bb.SqlServer.Structures
 
                 .AddTables(
 
+                    new TableDescriptor(schema, "Hosts")
+                        .AddColumn("Id", SqlTypeDescriptor.IdentityInt(1, 1), false)
+                        .AddColumn("Name", SqlTypeDescriptor.Varchar(70), false)
+                        .AddColumn("Instance", SqlTypeDescriptor.Varchar(170), true)
+                        .AddColumn("Kind", SqlTypeDescriptor.SmallInt(), false)
+                        .AddPrimaryKeys("Id"),
+
                     new TableDescriptor(schema, "Connections")
-                        .AddColumns(
-                            new ColumnDescriptor() { Name = "Id", Type = SqlTypeDescriptor.IdentityBigInt(1, 1), AllowNull = false },
-                            new ColumnDescriptor() { Name = "Name", Type = SqlTypeDescriptor.Varchar(70), AllowNull = false },
-                            new ColumnDescriptor() { Name = "Server", Type = SqlTypeDescriptor.Varchar(170), AllowNull = false },
-                            new ColumnDescriptor() { Name = "Database", Type = SqlTypeDescriptor.Varchar(170), AllowNull = false },
-                            new ColumnDescriptor() { Name = "Userid", Type = SqlTypeDescriptor.Varchar(170), AllowNull = true },
-                            new ColumnDescriptor() { Name = "Password", Type = SqlTypeDescriptor.Varchar(170), AllowNull = true }
-                    )
-                    .AddPrimaryKeys(
-                        new IndexedColumnReferenceDescriptor() { Name = "Id" }
-                    ),
+                        .AddColumn("Id", SqlTypeDescriptor.IdentityBigInt(1, 1), false)
+                        .AddColumn("Name", SqlTypeDescriptor.Varchar(70), false)
+                        .AddColumn("HostId", SqlTypeDescriptor.Int(), false)
+                        .AddColumn("Userid", SqlTypeDescriptor.Varchar(170), true)
+                        .AddColumn("Password", SqlTypeDescriptor.Varchar(170), true)
+                        .AddPrimaryKeys("Id")
+                        .AddForeignKey(null, schema, "Hosts", c =>
+                        {
+                            c.AddLocalColumns("HostId")
+                             .AddRemoteColumns("Id")
+                            ;
+                        }),
 
                     new TableDescriptor(schema, "Applications")
-                        .AddColumns(
-                            new ColumnDescriptor() { Name = "Id", Type = SqlTypeDescriptor.IdentityBigInt(1, 1), AllowNull = false },
-                            new ColumnDescriptor() { Name = "Name", Type = SqlTypeDescriptor.Varchar(70), AllowNull = false }
-                        )
-                        .AddPrimaryKeys(
-                            new IndexedColumnReferenceDescriptor() { Name = "Id" }
-                        ),
+                        .AddColumn("Id", SqlTypeDescriptor.IdentityBigInt(1, 1), false)
+                        .AddColumn("Name", SqlTypeDescriptor.Varchar(70), false)
+                        .AddPrimaryKeys("Id"),
 
                     new TableDescriptor(schema, "ApplicationEnvironments")
-                        .AddColumns(
-                            new ColumnDescriptor() { Name = "Id", Type = SqlTypeDescriptor.IdentityBigInt(1, 1), AllowNull = false },
-                            new ColumnDescriptor() { Name = "Name", Type = SqlTypeDescriptor.Varchar(70), AllowNull = false },
-                            new ColumnDescriptor() { Name = "ApplicationId", Type = SqlTypeDescriptor.BigInt(), AllowNull = false },
-                            new ColumnDescriptor() { Name = "ConnectionId", Type = SqlTypeDescriptor.BigInt(), AllowNull = false }
-                        )
-                        .AddPrimaryKeys(
-                            new IndexedColumnReferenceDescriptor() { Name = "Id" }
-                        )
+                        .AddColumn("Id", SqlTypeDescriptor.IdentityBigInt(1, 1), false)
+                        .AddColumn("Name", SqlTypeDescriptor.Varchar(70), false)
+                        .AddColumn("ApplicationId", SqlTypeDescriptor.BigInt(), false)
+                        .AddColumn("ConnectionId", SqlTypeDescriptor.BigInt(), false)
+                        .AddPrimaryKeys("Id")
                         .AddForeignKey(null, schema, "Applications", c =>
                         {
                             c.AddLocalColumns("ApplicationId")
                              .AddRemoteColumns("Id")
-                             //.DeleteCascade(true)
-                             //.UpdateCascade(true)
+                            //.DeleteCascade(true)
+                            //.UpdateCascade(true)
                             ;
 
                         })
@@ -76,72 +80,59 @@ namespace Bb.SqlServer.Structures
                         {
                             c.AddLocalColumns("ConnectionId")
                              .AddRemoteColumns("Id")
-                             //.DeleteCascade(true)
-                             //.UpdateCascade(true)
+                            //.DeleteCascade(true)
+                            //.UpdateCascade(true)
                             ;
-
                         }),
 
                     new TableDescriptor(schema, "DiskTables")
-                        .AddColumns(
-                            new ColumnDescriptor() { Name = "Id", Type = SqlTypeDescriptor.IdentityBigInt(1, 1), AllowNull = false },
-                            new ColumnDescriptor() { Name = "ApplicationEnvironmentId", Type = SqlTypeDescriptor.BigInt(), AllowNull = false },
-                            new ColumnDescriptor() { Name = "TableSchema", Type = SqlTypeDescriptor.Varchar(70), AllowNull = false },
-                            new ColumnDescriptor() { Name = "Name", Type = SqlTypeDescriptor.Varchar(70), AllowNull = false },
-                            new ColumnDescriptor() { Name = "PartitionSchemeName", Type = SqlTypeDescriptor.Varchar(160), AllowNull = true }
-                        )
-                        .AddPrimaryKeys(
-                            new IndexedColumnReferenceDescriptor() { Name = "Id" }
-                        )
+                        .AddColumn("Id", SqlTypeDescriptor.IdentityBigInt(1, 1), false)
+                        .AddColumn("ApplicationEnvironmentId", SqlTypeDescriptor.BigInt(), false)
+                        .AddColumn("TableSchema", SqlTypeDescriptor.Varchar(70), false)
+                        .AddColumn("Name", SqlTypeDescriptor.Varchar(70), false)
+                        .AddColumn("PartitionSchemeName", SqlTypeDescriptor.Varchar(160), true)
+                        .AddPrimaryKeys("Id")
                         .AddForeignKey(null, schema, "ApplicationEnvironments", c =>
                         {
                             c.AddLocalColumns("ApplicationEnvironmentId")
                              .AddRemoteColumns("Id")
-                             //.DeleteCascade(true)
-                             //.UpdateCascade(true)
+                            //.DeleteCascade(true)
+                            //.UpdateCascade(true)
                             ;
 
                         }),
 
                     new TableDescriptor(schema, "DiskTablesIndex")
-                        .AddColumns(
-                           new ColumnDescriptor() { Name = "Id", Type = SqlTypeDescriptor.IdentityBigInt(1, 1), AllowNull = false },
-                           new ColumnDescriptor() { Name = "Table", Type = SqlTypeDescriptor.BigInt(), AllowNull = false },
-                           new ColumnDescriptor() { Name = "PrimaryKey", Type = SqlTypeDescriptor.Bit(), AllowNull = false },
-                           new ColumnDescriptor() { Name = "Name", Type = SqlTypeDescriptor.Varchar(70), AllowNull = false },
-                           new ColumnDescriptor() { Name = "Clustered", Type = SqlTypeDescriptor.Bit(), AllowNull = false },
-                           new ColumnDescriptor() { Name = "Unique", Type = SqlTypeDescriptor.Bit(), AllowNull = false },
-                           new ColumnDescriptor() { Name = "PartitionSchemeName", Type = SqlTypeDescriptor.Varchar(60), AllowNull = true },
-                           new ColumnDescriptor() { Name = "PadIndex", Type = SqlTypeDescriptor.Bit(), AllowNull = true },
-                           new ColumnDescriptor() { Name = "StatisticsNoRecompute", Type = SqlTypeDescriptor.Bit(), AllowNull = true },
-                           new ColumnDescriptor() { Name = "AllowRowLocks", Type = SqlTypeDescriptor.Bit(), AllowNull = true },
-                           new ColumnDescriptor() { Name = "AllowPageLocks", Type = SqlTypeDescriptor.Bit(), AllowNull = true },
-                           new ColumnDescriptor() { Name = "OptimizeForSequentialKey", Type = SqlTypeDescriptor.Bit(), AllowNull = true }
-                        )
-                        .AddPrimaryKeys(
-                            new IndexedColumnReferenceDescriptor() { Name = "Id" }
-                        )
+                        .AddColumn("Id", SqlTypeDescriptor.IdentityBigInt(1, 1), false)
+                        .AddColumn("TableId", SqlTypeDescriptor.BigInt(), false)
+                        .AddColumn("PrimaryKey", SqlTypeDescriptor.Bit(), false)
+                        .AddColumn("Name", SqlTypeDescriptor.Varchar(70), false)
+                        .AddColumn("Clustered", SqlTypeDescriptor.Bit(), false)
+                        .AddColumn("Unique", SqlTypeDescriptor.Bit(), false)
+                        .AddColumn("PartitionSchemeName", SqlTypeDescriptor.Varchar(60), true)
+                        .AddColumn("PadIndex", SqlTypeDescriptor.Bit(), true)
+                        .AddColumn("StatisticsNoRecompute", SqlTypeDescriptor.Bit(), true)
+                        .AddColumn("AllowRowLocks", SqlTypeDescriptor.Bit(), true)
+                        .AddColumn("AllowPageLocks", SqlTypeDescriptor.Bit(), true)
+                        .AddColumn("OptimizeForSequentialKey", SqlTypeDescriptor.Bit(), true)
+                        .AddPrimaryKeys("Id")
                         .AddForeignKey(null, schema, "DiskTables", c =>
                         {
-                            c.AddLocalColumns("Table");
+                            c.AddLocalColumns("TableId");
                             c.AddRemoteColumns("Id");
                         }),
 
                     new TableDescriptor(schema, "DiskTablesColumns")
-                        .AddColumns(
-                            new ColumnDescriptor() { Name = "Id", Type = SqlTypeDescriptor.IdentityBigInt(1, 1), AllowNull = false },
-                            new ColumnDescriptor() { Name = "Table", Type = SqlTypeDescriptor.BigInt(), AllowNull = false },
-                            new ColumnDescriptor() { Name = "Name", Type = SqlTypeDescriptor.Varchar(70), AllowNull = false },
-                            new ColumnDescriptor() { Name = "Type", Type = SqlTypeDescriptor.Varchar(70), AllowNull = false },
-                            new ColumnDescriptor() { Name = "Precision", Type = SqlTypeDescriptor.Int(), AllowNull = false },
-                            new ColumnDescriptor() { Name = "Scale", Type = SqlTypeDescriptor.Int(), AllowNull = false },
-                            new ColumnDescriptor() { Name = "AllowNull", Type = SqlTypeDescriptor.Bit(), AllowNull = true },
-                            new ColumnDescriptor() { Name = "Caption", Type = SqlTypeDescriptor.Varchar(160), AllowNull = true },
-                            new ColumnDescriptor() { Name = "DefaultValue", Type = SqlTypeDescriptor.Varchar(160), AllowNull = true }
-                        )
-                        .AddPrimaryKeys(
-                            new IndexedColumnReferenceDescriptor() { Name = "Id" }
-                        )
+                        .AddColumn("Id", SqlTypeDescriptor.IdentityBigInt(1, 1), false)
+                        .AddColumn("Table", SqlTypeDescriptor.BigInt(), false)
+                        .AddColumn("Name", SqlTypeDescriptor.Varchar(70), false)
+                        .AddColumn("Type", SqlTypeDescriptor.Varchar(70), false)
+                        .AddColumn("Precision", SqlTypeDescriptor.Int(), false)
+                        .AddColumn("Scale", SqlTypeDescriptor.Int(), false)
+                        .AddColumn("AllowNull", SqlTypeDescriptor.Bit(), true)
+                        .AddColumn("Caption", SqlTypeDescriptor.Varchar(160), true)
+                        .AddColumn("DefaultValue", SqlTypeDescriptor.Varchar(160), true)
+                        .AddPrimaryKeys("Id")
                         .AddForeignKey("FK_DiskTablesColumns_Table_2_DiskTables_Id", schema, "DiskTables", c =>
                         {
                             c.AddLocalColumns("Table");
@@ -149,30 +140,21 @@ namespace Bb.SqlServer.Structures
                         }),
 
                     new TableDescriptor(schema, "Diagrams")
-                        .AddColumns(
-                            new ColumnDescriptor() { Name = "Id", Type = SqlTypeDescriptor.IdentityBigInt(1, 1), AllowNull = false },
-                            new ColumnDescriptor() { Name = "Name", Type = SqlTypeDescriptor.Varchar(70), AllowNull = false }
-                        )
-                        .AddPrimaryKeys(
-                            new IndexedColumnReferenceDescriptor() { Name = "Id" }
-                        ),
+                        .AddColumn("Id", SqlTypeDescriptor.IdentityBigInt(1, 1), false)
+                        .AddColumn("Name", SqlTypeDescriptor.Varchar(70), false)
+
+                        .AddPrimaryKeys("Id"),
 
                     new TableDescriptor(schema, "DiagramDiskTables")
-                        .AddColumns(
-                            new ColumnDescriptor() { Name = "ApplicationEnvironmentId", Type = SqlTypeDescriptor.BigInt(), AllowNull = false },
-                            new ColumnDescriptor() { Name = "DiagramsId", Type = SqlTypeDescriptor.BigInt(), AllowNull = false },
-                            new ColumnDescriptor() { Name = "DiskTableId", Type = SqlTypeDescriptor.BigInt(), AllowNull = false },
-                            new ColumnDescriptor() { Name = "X", Type = SqlTypeDescriptor.Decimal(12, 5), AllowNull = false },
-                            new ColumnDescriptor() { Name = "Y", Type = SqlTypeDescriptor.Decimal(12, 5), AllowNull = false }
-                        )
-                        .AddPrimaryKeys(
-                            new IndexedColumnReferenceDescriptor() { Name = "ApplicationEnvironmentId" },
-                            new IndexedColumnReferenceDescriptor() { Name = "DiagramsId" },
-                            new IndexedColumnReferenceDescriptor() { Name = "DiskTableId" }
-                        )
-                        .AddForeignKey(null, schema, "ApplicationEnvironments", c =>
+                        .AddColumn("Id", SqlTypeDescriptor.IdentityBigInt(1, 1), false)
+                        .AddColumn("DiagramsId", SqlTypeDescriptor.BigInt(), false)
+                        .AddColumn("DiskTableId", SqlTypeDescriptor.BigInt(), false)
+                        .AddColumn("X", SqlTypeDescriptor.Decimal(12, 5), false)
+                        .AddColumn("Y", SqlTypeDescriptor.Decimal(12, 5), false)
+                        .AddPrimaryKeys("Id")
+                        .AddForeignKey(null, schema, "DiskTables", c =>
                         {
-                            c.AddLocalColumns("ApplicationEnvironmentId")
+                            c.AddLocalColumns("DiskTableId")
                             .AddRemoteColumns("Id")
                             //.DeleteCascade(true)
                             //.UpdateCascade(true)

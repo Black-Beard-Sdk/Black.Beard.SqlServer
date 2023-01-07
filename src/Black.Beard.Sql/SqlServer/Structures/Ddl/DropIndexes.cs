@@ -12,7 +12,7 @@ namespace Bb.SqlServer.Structures.Ddl
         }
 
 
-        internal void Parse(DatabaseStructure structure)
+        public void Parse(DatabaseStructure structure)
         {
 
             Parse(structure.Tables);
@@ -20,7 +20,7 @@ namespace Bb.SqlServer.Structures.Ddl
         }
 
 
-        private void Parse(TableListDescriptor tables)
+        public void Parse(TableListDescriptor tables)
         {
 
             AppendEndLine("SET ANSI_NULLS ON");
@@ -34,7 +34,7 @@ namespace Bb.SqlServer.Structures.Ddl
 
         }
 
-        private void Parse(TableDescriptor table)
+        public void Parse(TableDescriptor table)
         {
 
             var targetTable = this._ctx.CurrentState?.GetTable(table.Schema, table.Name);

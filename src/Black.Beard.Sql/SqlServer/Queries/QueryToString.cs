@@ -64,29 +64,55 @@ namespace Bb.SqlServer.Queries
                 }
 
 
-                if (q.ClauseMatched != null) // [ WHEN MATCHED 
+                if (q.ClauseMatched != null)                    // [ WHEN MATCHED 
                 {
                     Append("WHEN MATCHED");
-                    q.ClauseMatched.Accept(this); // AND <clause_search_condition>
+                    q.ClauseMatched.Accept(this);               // AND <clause_search_condition>
                     AppendCloseLine();
                     AppendCloseLine();
                 }
 
-                if (q.ClauseNotMatchedByTarget != null) // [ WHEN NOT MATCHED [ BY TARGET ] 
+                if (q.ClauseNotMatchedByTarget != null)         // [ WHEN NOT MATCHED [ BY TARGET ] 
                 {
                     Append("WHEN NOT MATCHED BY TARGET");
-                    q.ClauseNotMatchedByTarget.Accept(this); // AND <clause_search_condition>
+                    q.ClauseNotMatchedByTarget.Accept(this);    // AND <clause_search_condition>
                     AppendCloseLine();
                 }
 
-                if (q.ClauseNotMatchedBySource != null) // [ WHEN NOT MATCHED BY SOURCE ]
+                if (q.ClauseNotMatchedBySource != null)         // [ WHEN NOT MATCHED BY SOURCE ]
                 {
                     Append("WHEN NOT MATCHED BY SOURCE");
-                    q.ClauseNotMatchedBySource.Accept(this); // AND <clause_search_condition>
+                    q.ClauseNotMatchedBySource.Accept(this);    // AND <clause_search_condition>
                     AppendCloseLine();
                 }
 
-                // OUTPUT deleted.*, $action, inserted.* INTO #MyTempTable;  
+                if (q.ClauseNotMatchedByTarget != null)         // [ WHEN NOT MATCHED [ BY TARGET ] 
+                {
+
+                    AppendCloseLine("OUTPUT $action");
+
+                    var c1 = new CollectTargetKeys();
+                    c1.VisitBinary(q.OnClause as BinarySqlExpression);
+
+                    foreach (var item in c1.Items)
+                    {
+                        string colName = item.Label;
+                        if (item.Child != null)
+                            colName = item.Child.Label;
+                        AppendCloseLine($"  , COALESCE([DELETED].[{colName}], [INSERTED].[{colName}]) as {colName}");
+                    }
+
+                    foreach (var item in q.ClauseNotMatchedByTarget.Sets)
+                    {
+                        var c = item.Column;
+                        string colName = c.Label;
+                        if (c.Child != null)
+                            colName = c.Child.Label;
+                        AppendCloseLine($"  , COALESCE([DELETED].[{colName}], [INSERTED].[{colName}]) as {colName}");
+                    }
+
+                    AppendCloseLine();
+                }
 
             }
 
@@ -104,71 +130,79 @@ namespace Bb.SqlServer.Queries
             }
 
             //      THEN <merge_matched> ] [ ...n ]  
-            Append(" THEN ");
-
-            switch (q.KindAction)
+            AppendCloseLine(" THEN ");
+            using (Indent())
             {
+                switch (q.KindAction)
+                {
 
-                case MergeClauseActionEnumEnum.Insert:
-                    AppendCloseLine("INSERT");
-                    AppendCloseLine("(");
-                    using (Indent())
-                    {
-                        if (q.Sets != null)
+                    case MergeClauseActionEnumEnum.Insert:
+                        AppendCloseLine("INSERT");
+                        AppendCloseLine("(");
+                        using (Indent())
                         {
-                            string comma = string.Empty;
-                            foreach (var item in q.Sets)
+                            if (q.Sets != null)
                             {
-                                Append(comma);
-                                Append(FormatLabel(item.Column));
-                                comma = ", ";
-                            }
+                                string comma = string.Empty;
+                                foreach (var item in q.Sets)
+                                {
+                                    Append(comma);
+                                    Append(FormatLabel(item.Column));
+                                    comma = ", ";
+                                }
 
-                        }
-                    }
-                    AppendCloseLine();
-                    AppendCloseLine(")");
-
-                    AppendCloseLine("VALUES");
-                    AppendCloseLine("(");
-                    using (Indent())
-                    {
-                        if (q.Sets != null)
-                        {
-                            string comma = string.Empty;
-                            foreach (var item in q.Sets)
-                            {
-                                Append(comma);
-                                item.Value.Accept(this);
-                                comma = ", ";
                             }
                         }
-                    }
-                    AppendCloseLine();
-                    AppendCloseLine(")");
+                        AppendCloseLine();
+                        AppendCloseLine(")");
 
-                    break;
-
-                case MergeClauseActionEnumEnum.Update:
-                    AppendCloseLine("UPDATE SET");
-                    using (Indent())
-                    {
-                        if (q.Sets != null)
-                            foreach (var item in q.Sets)
+                        AppendCloseLine("VALUES");
+                        AppendCloseLine("(");
+                        using (Indent())
+                        {
+                            if (q.Sets != null)
                             {
-                                Append(FormatLabel(item.Column), " = ");
-                                item.Value.Accept(this);
+                                string comma = string.Empty;
+                                foreach (var item in q.Sets)
+                                {
+                                    Append(comma);
+                                    item.Value.Accept(this);
+                                    comma = ", ";
+                                }
                             }
-                    }
-                    break;
+                        }
+                        AppendCloseLine();
+                        AppendCloseLine(")");
 
-                case MergeClauseActionEnumEnum.Delete:
-                    AppendCloseLine("DELETE");
-                    break;
+                        break;
 
-                default:
-                    break;
+                    case MergeClauseActionEnumEnum.Update:
+                        Append("UPDATE SET");
+                        using (Indent())
+                        {
+                            if (q.Sets != null)
+                            {
+                                string comma = string.Empty;
+                                foreach (var item in q.Sets)
+                                {
 
+                                    AppendCloseLine(comma);
+                                    Append(FormatLabel(item.Column), " = ");
+                                    item.Value.Accept(this);
+                                    comma = ", ";
+                                }
+                            }
+                        }
+                        break;
+
+                    case MergeClauseActionEnumEnum.Delete:
+                        AppendCloseLine("DELETE");
+                        break;
+
+                    default:
+                        break;
+
+                }
             }
 
         }
@@ -344,6 +378,65 @@ namespace Bb.SqlServer.Queries
         public override void VisitKeyword(Keyword q)
         {
             Append(" ", q.Key);
+        }
+
+
+        private class CollectTargetKeys : QueryBaseVisitor
+        {
+
+            public CollectTargetKeys()
+            {
+                this.Items = new List<SqlLabelReference>();
+
+            }
+
+            public List<SqlLabelReference> Items { get; }
+
+            public override void VisitBinary(BinarySqlExpression q)
+            {
+
+                q.Left.Accept(this);
+            }
+
+            public override void VisitConstant(Constant q)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override void VisitFunction(FunctionSqlExpression q)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override void VisitKeyword(Keyword q)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override void VisitLabelReference(SqlLabelReference q)
+            {
+                 this.Items.Add(q);
+            }
+
+            public override void VisitList(SqlExpressionList q)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override void VisitMerge(Merge q)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override void VisitMergeClause(MergeClause q)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override void VisitUnary(UnarySqlExpression q)
+            {
+                throw new NotImplementedException();
+            }
         }
 
 

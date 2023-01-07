@@ -13,7 +13,7 @@ namespace Bb.SqlServer.Structures.Ddl
         }
 
 
-        internal void Parse(DatabaseStructure structure)
+        public void Parse(DatabaseStructure structure)
         {
 
             Parse(structure.Tables);
@@ -21,7 +21,7 @@ namespace Bb.SqlServer.Structures.Ddl
         }
 
 
-        private void Parse(TableListDescriptor tables)
+        public void Parse(TableListDescriptor tables)
         {
 
             foreach (var table in tables)
@@ -29,7 +29,7 @@ namespace Bb.SqlServer.Structures.Ddl
 
         }
 
-        private void Parse(TableDescriptor table)
+        public void Parse(TableDescriptor table)
         {
 
             var targetTable = this._ctx.CurrentState?.GetTable(table.Schema, table.Name);
@@ -55,7 +55,7 @@ namespace Bb.SqlServer.Structures.Ddl
 
         }
 
-        private void Parse(TableDescriptor table, ForeignKeyDescriptor foreign)
+        public void Parse(TableDescriptor table, ForeignKeyDescriptor foreign)
         {
 
             AppendEndLine(TextQueries.TestConstraintExists(foreign.Name));

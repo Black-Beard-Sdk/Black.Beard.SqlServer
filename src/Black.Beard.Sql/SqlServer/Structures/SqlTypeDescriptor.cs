@@ -70,6 +70,20 @@ namespace Bb.SqlServer.Structures
 
         }
 
+        public SqlTypeDescriptor(int arg1, string sqlLabel)
+        {
+            ColumnType = sqlLabel;
+            Argument1 = arg1;
+        }
+
+        public SqlTypeDescriptor(int arg1, int arg2, string sqlLabel)
+        {
+            ColumnType = sqlLabel;
+            Argument1 = arg1;
+            Argument2= arg2;
+        }
+
+
         public SqlTypeDescriptor(SqlDataTypeDescriptor type)
         {
             ColumnType = type.SqlLabel;
@@ -80,7 +94,15 @@ namespace Bb.SqlServer.Structures
 
         public string XmlSchemaCollection { get; set; }
 
-        public SqlDataTypeDescriptor Type
+        public static int Max { get => -1; }
+
+        public bool IsIdentity { get; set; }
+
+        public int? Argument1 { get; set; }
+
+        public int? Argument2 { get; set; }
+
+        public SqlDataTypeDescriptor SqlDataType
         {
             get
             {

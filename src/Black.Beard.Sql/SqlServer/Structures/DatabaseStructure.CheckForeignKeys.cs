@@ -71,10 +71,10 @@ namespace Bb.SqlServer.Structures
 
                                     if (c1 != null && c2 != null)
                                     {
-                                        if (c1.Type.Type.SqlLabel != c2.Type.Type.SqlLabel)
+                                        if (c1.SqlType.SqlDataType.SqlLabel != c2.SqlType.SqlDataType.SqlLabel)
                                             ctx.Add(foreignKey
                                                 , "Type"
-                                                , $"Column {c1.Name} of type {c1.Type.Type.SqlLabel} and {c2.Name} of type {c2.Type.Type.SqlLabel} donst match."
+                                                , $"Column {c1.Name} of type {c1.SqlType.SqlDataType.SqlLabel} and {c2.Name} of type {c2.SqlType.SqlDataType.SqlLabel} donst match."
                                                 , LevelCheck.Error);
                                     }
 

@@ -6,10 +6,10 @@ namespace Bb.SqlServer.Structures.Ddl
     public class DdlBase
     {
 
-        public DdlBase(Writer writer, ScriptContext ctx)
+        public DdlBase(Writer writer, ScriptContext? ctx = null)
         {
             _writer = writer;
-            _ctx = ctx;
+            _ctx = ctx ?? new ScriptContext();
         }
 
         public void Go()

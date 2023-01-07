@@ -2,7 +2,7 @@
 {
 
 
-    public class ColumnReferenceListDescriptor : List<ColumnReferenceDescriptor>
+    public class ColumnReferenceListDescriptor : ListModelDescriptor<ColumnReferenceDescriptor>
     {
 
         public ColumnReferenceListDescriptor()
@@ -16,7 +16,12 @@
         }
 
 
-
+        public void For(Action<ColumnReferenceDescriptor> value)
+        {
+            foreach (var item in this)
+                if (value != null)
+                    value(item);
+        }
 
     }
 

@@ -2,7 +2,7 @@
 {
 
 
-    public class SchemaListDescriptor : List<SchemaDescriptor>
+    public class SchemaListDescriptor : ListModelDescriptor<SchemaDescriptor>
     {
 
         public SchemaListDescriptor() : base()
@@ -34,6 +34,14 @@
 
             }
 
+        }
+
+
+        public void For(Action<SchemaDescriptor> value)
+        {
+            foreach (var item in this)
+                if (value != null)
+                    value(item);
         }
 
 

@@ -14,6 +14,14 @@
         {
             return this.Name != target.Name;
         }
+
+        public virtual ColumnReferenceDescriptor Clone()
+        {
+
+            return new ColumnReferenceDescriptor() { Name = this.Name };
+
+        }
+
     }
 
 

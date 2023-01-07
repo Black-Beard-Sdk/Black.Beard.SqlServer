@@ -14,7 +14,7 @@ namespace Bb.SqlServer.Structures.Ddl
         }
 
 
-        internal void Parse(DatabaseStructure structure)
+        public void Parse(DatabaseStructure structure)
         {
 
             CommentLine("Create primary key");
@@ -24,7 +24,7 @@ namespace Bb.SqlServer.Structures.Ddl
         }
 
 
-        private void Parse(TableListDescriptor tables)
+        public void Parse(TableListDescriptor tables)
         {
 
             AppendEndLine("SET ANSI_NULLS ON");
@@ -58,7 +58,7 @@ namespace Bb.SqlServer.Structures.Ddl
 
         }
 
-        private void Parse(TableDescriptor table)
+        public void Parse(TableDescriptor table)
         {
 
             Append("ALTER TABLE ");
@@ -73,7 +73,7 @@ namespace Bb.SqlServer.Structures.Ddl
 
         }
 
-        private void Parse(PrimaryKeyDescriptor key)
+        public void Parse(PrimaryKeyDescriptor key)
         {
 
             Append("ADD CONSTRAINT ", AsLabel(key.Name), " PRIMARY KEY ");

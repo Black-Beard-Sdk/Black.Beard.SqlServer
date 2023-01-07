@@ -4,6 +4,7 @@ using System.Data;
 using System.Data.Common;
 using System.Data.SqlClient;
 using System.Diagnostics;
+using System.Reflection.Metadata.Ecma335;
 
 namespace Bb.SqlServerStructures
 {
@@ -48,10 +49,7 @@ namespace Bb.SqlServerStructures
             bool useTransaction = false;
             Exception ex = null;
 
-
             var scripts = ScriptConvert.Get(commandText);
-
-
 
             foreach (var item in scripts)
             {
@@ -372,7 +370,16 @@ namespace Bb.SqlServerStructures
                         cmd.Parameters.Add(p);
                     }
 
+            TraceCommand(cmd);
+
             return cmd;
+
+        }
+
+        private void TraceCommand(SqlCommand cmd)
+        {
+
+            Debug.WriteLine(cmd.CommandText);
 
         }
 

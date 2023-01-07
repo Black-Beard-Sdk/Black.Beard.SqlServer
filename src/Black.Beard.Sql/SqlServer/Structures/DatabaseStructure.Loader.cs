@@ -13,69 +13,123 @@ namespace Bb.SqlServer.Structures
     {
 
 
-        public static DatabaseStructure Load(ConnectionStringSetting setting)
+        public static DatabaseStructure ResolveFromDatabase(ConnectionStringSetting setting)
         {
 
             DatabaseStructure str = new DatabaseStructure();
 
             try
             {
-                LoadTables(setting, str);
-                LoadIndexes(setting, str);
-                LoadFileGroups(setting, str);
-                LoadSchemas(setting, str);
-                LoadForeign(setting, str);
+                str.ResolveTablesFromDatabase(setting);
+                str.ResolveIndexesFromDatabase(setting);
+                ResolveFileGroupsFromDatabase(setting, str);
+                ResolveSchemasFromDatabase(setting, str);
+                ResolveForeignkeyFromDatabase(setting, str);
             }
             catch (SqlException e)
             {
-        
+
             }
 
             return str;
 
         }
 
-        private static void LoadTables(ConnectionStringSetting setting, DatabaseStructure str)
+        public TableDescriptor? ResolveTableFromDatabase(ConnectionStringSetting setting, string schema, string table)
+        {
+
+            var sql = setting.CreateProcessor();
+
+            var catalog = sql.ConnectionBuilder.InitialCatalog;
+            var structure = TextQueries.Structures(catalog, $"tbs.[name] = '{table}' AND OBJECT_SCHEMA_NAME(tbs.[object_id], DB_ID('$dbId')) = '{schema}'");
+
+            foreach (var reader in sql.Read<ColumnStructures>(structure))
+                ResolveTablesFromDatabase(reader);
+
+            return GetTable(schema, table);
+
+        }
+
+        public void ResolveTablesFromDatabase(ConnectionStringSetting setting)
         {
 
             var processor = setting.CreateProcessor();
 
-            foreach (var reader in processor.Read<ColumnStructures>(TextQueries.Structures.Replace("$dbId", processor.ConnectionBuilder.InitialCatalog)))
+            foreach (var reader in processor.Read<ColumnStructures>(TextQueries.Structures(processor.ConnectionBuilder.InitialCatalog)))
+                ResolveTablesFromDatabase(reader);
+
+        }
+
+        public void ResolveTablesFromDatabase(Reader<ColumnStructures> reader)
+        {
+
+            var schemaName = reader.GetString(ColumnStructures.Schema);
+            var tableName = reader.GetString(ColumnStructures.TableName);
+
+            var table = GetTable(schemaName, tableName);
+            if (table == null)
+                Tables.Add(table = TableDescriptor.Load(reader));
+
+            table.AddColumns(ColumnDescriptor.Create(reader));
+
+        }
+
+        public void ResolveIndexesFromDatabase(ConnectionStringSetting setting, TableDescriptor table)
+        {
+
+            var processor = setting.CreateProcessor();
+
+            var filter = $" AND index_id > 0 AND t.[type] = 'U' AND schema_name(t.schema_id) = '{table.Schema}' AND t.[name] = '{table.Name}'";
+            var query = TextQueries.Indexes(filter);
+
+            foreach (var reader in processor.Read<IndexColumns>(query))
             {
 
-                var schemaName = reader.GetString(ColumnStructures.Schema);
-                var tableName = reader.GetString(ColumnStructures.table_name);
+                var object_type = reader.GetString(IndexColumns.object_type);
 
-                var table = str.GetTable(schemaName, tableName);
-                if (table == null)
-                {
-                    table = new TableDescriptor() { Schema = schemaName, Name = tableName };
-                    str.Tables.Add(table);
-                }
-
-                var column = new ColumnDescriptor()
-                {
-                    Name = reader.GetString(ColumnStructures.column_name),
-                    Caption = reader.GetString(ColumnStructures.Description),
-                    AllowNull = reader.GetBoolean(ColumnStructures.is_nullable),
-                    Type = SqlTypeDescriptor.Create
-                    (
-                        reader.GetString(ColumnStructures.system_data_type),
-                        reader.GetBoolean(ColumnStructures.is_identity),
-                        reader.GetInt32(ColumnStructures.max_length),
-                        reader.GetByte(ColumnStructures.precision),
-                        reader.GetByte(ColumnStructures.scale),
-                        reader.GetInt32(ColumnStructures.Seed),
-                        reader.GetInt32(ColumnStructures.Increment)
-                    )
-                };
-
-                table.AddColumns(column);
+                if (object_type == "Table")
+                    table.LoadIndexes(reader);
 
             }
         }
 
-        private static void LoadForeign(ConnectionStringSetting setting, DatabaseStructure str)
+        private void ResolveIndexesFromDatabase(ConnectionStringSetting setting)
+        {
+
+            var processor = setting.CreateProcessor();
+
+            var query = TextQueries.Indexes();
+
+            foreach (var reader in processor.Read<IndexColumns>(query))
+            {
+
+                var schemaName = reader.GetString(IndexColumns.schema_name);
+                var tableNameViewName = reader.GetString(IndexColumns.tableView);
+                var object_type = reader.GetString(IndexColumns.object_type);
+
+                if (object_type == "Table")
+                {
+
+                    var table = this.GetTable(schemaName, tableNameViewName);
+                    if (table != null)
+                        table.LoadIndexes(reader);
+
+                }
+                else if (object_type == "View")
+                {
+
+
+
+                }
+                else
+                {
+
+                }
+
+            }
+        }
+
+        private static void ResolveForeignkeyFromDatabase(ConnectionStringSetting setting, DatabaseStructure str)
         {
 
             var processor = setting.CreateProcessor();
@@ -114,69 +168,7 @@ namespace Bb.SqlServer.Structures
             }
         }
 
-        private static void LoadIndexes(ConnectionStringSetting setting, DatabaseStructure str)
-        {
-
-            var processor = setting.CreateProcessor();
-
-            foreach (var reader in processor.Read<IndexColumns>(TextQueries.Indexes))
-            {
-
-                var schemaName = reader.GetString(IndexColumns.schema_name);
-                var tableNameViewName = reader.GetString(IndexColumns.tableView);
-                var object_type = reader.GetString(IndexColumns.object_type);
-
-
-                var type = reader.GetString(IndexColumns.index_type);
-
-                if (object_type == "Table")
-                {
-                    var table = str.GetTable(schemaName, tableNameViewName);
-                    if (table != null)
-                    {
-
-                        var is_primary = reader.GetBoolean(IndexColumns.is_primary);
-                        if (is_primary)
-                        {
-                            var key = new PrimaryKeyDescriptor()
-                            {
-                                Name = reader.GetString((int)IndexColumns.name),
-                                Clustered = type == "Clustered index",
-                                Unique = reader.GetBoolean(IndexColumns.is_unique),
-                                PartitionSchemeName = reader.GetString(IndexColumns.Filegroup),
-                            };
-                            Map(reader, key);
-                            table.Keys.Add(key);
-                        }
-                        else
-                        {
-                            var key = new IndexDescriptor()
-                            {
-                                Name = reader.GetString((int)IndexColumns.name),
-                                Clustered = type == "Clustered index",
-                                Unique = reader.GetBoolean(IndexColumns.is_unique),
-                            };
-                            Map(reader, key);
-                            table.Indexes.Add(key);
-                        }
-
-                    }
-                }
-                else if (type == "View")
-                {
-
-
-
-                }
-                else
-                {
-
-                }
-
-            }
-        }
-
-        private static void LoadFileGroups(ConnectionStringSetting setting, DatabaseStructure str)
+        private static void ResolveFileGroupsFromDatabase(ConnectionStringSetting setting, DatabaseStructure str)
         {
 
             var processor = setting.CreateProcessor();
@@ -200,7 +192,7 @@ namespace Bb.SqlServer.Structures
             }
         }
 
-        private static void LoadSchemas(ConnectionStringSetting setting, DatabaseStructure str)
+        private static void ResolveSchemasFromDatabase(ConnectionStringSetting setting, DatabaseStructure str)
         {
 
             var processor = setting.CreateProcessor();
@@ -256,6 +248,7 @@ namespace Bb.SqlServer.Structures
                 });
             }
         }
+
     }
 
 }

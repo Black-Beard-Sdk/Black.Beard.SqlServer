@@ -20,7 +20,7 @@ namespace Bb.SqlServer.Structures.Ddl
         }
 
 
-        internal void Parse(DatabaseStructure structure)
+        public void Parse(DatabaseStructure structure)
         {
 
 
@@ -133,6 +133,8 @@ namespace Bb.SqlServer.Structures.Ddl
         }
 
 
+
+
         private string GetPath()
         {
 
@@ -171,14 +173,12 @@ namespace Bb.SqlServer.Structures.Ddl
 
         }
 
+
         private void WriteSetProperty<T>(string databseName, Expression<Func<DatabaseStructure, T>> e, object instance)
         {
 
             Append("ALTER DATABASE ", AsLabel(databseName), " ");
-
-            var visitor = new PropertyVisitor();
-            visitor.Visit(e);
-            var property = visitor.Property;
+            var property = e.GetProperty();
             var attribute = property.GetCustomAttribute(typeof(PropertySerializedAttribute), true) as PropertySerializedAttribute;
 
             if (attribute != null)
@@ -193,15 +193,12 @@ namespace Bb.SqlServer.Structures.Ddl
 
         }
 
+
         private void WriteSetProperty<T>(Expression<Func<DatabaseStructure, T>> e, object instance)
         {
 
             Append("ALTER DATABASE ");
-
-            var visitor = new PropertyVisitor();
-            visitor.Visit(e);
-            var property = visitor.Property;
-
+            var property = e.GetProperty();
             var attribute = property.GetCustomAttribute(typeof(PropertySerializedAttribute), true) as PropertySerializedAttribute;
 
             if (attribute != null)
@@ -217,29 +214,8 @@ namespace Bb.SqlServer.Structures.Ddl
 
         }
 
+
         private readonly string _path;
-
-        private class PropertyVisitor : ExpressionVisitor
-        {
-
-
-            public PropertyVisitor()
-            {
-
-            }
-
-            public PropertyInfo Property { get; private set; }
-
-            protected override Expression VisitMember(MemberExpression node)
-            {
-
-                if (node.Member is PropertyInfo p)
-                    this.Property = p;
-
-                return base.VisitMember(node);
-            }
-
-        }
 
 
     }

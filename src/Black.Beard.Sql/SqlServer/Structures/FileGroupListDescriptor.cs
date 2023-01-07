@@ -1,6 +1,6 @@
 ﻿namespace Bb.SqlServer.Structures
 {
-    public class FileGroupListDescriptor : List<FileGroupDescriptor>
+    public class FileGroupListDescriptor : ListModelDescriptor<FileGroupDescriptor>
     {
 
         public FileGroupListDescriptor() : base()
@@ -22,6 +22,13 @@
             if (item.Count() == 0)
                 Add(new FileGroupDescriptor() { Name = name });
 
+        }
+
+        public void For(Action<FileGroupDescriptor> value)
+        {
+            foreach (var item in this)
+                if (value != null)
+                    value(item);
         }
 
     }

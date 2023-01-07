@@ -36,6 +36,15 @@
 
         }
 
+        internal void CloneFrom(IndexProperties source)
+        {
+            this.PadIndex = source.PadIndex;
+            this.StatisticsNorecompute = source.StatisticsNorecompute;
+            this.AllowPageLocks= source.AllowPageLocks;
+            this.AllowRowLocks= source.AllowRowLocks;
+            this.OptimizeForSequentialKey= source.OptimizeForSequentialKey;
+        }
+
         // public bool DropExisting { get; set; } = false;
         // public bool Online { get; set; } = false;
         // public bool SortInTempdb { get; set; } = false;

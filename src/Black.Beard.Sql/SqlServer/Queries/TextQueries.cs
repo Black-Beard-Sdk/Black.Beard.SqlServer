@@ -13,17 +13,21 @@ namespace Bb.SqlServer.Queries
     public class TextQueries
     {
 
+        public static string SelectDatabases() => $"SELECT name FROM master.sys.databases";
+        
         public static string TestDatabaseNoExists(string databaseName) => $"IF NOT EXISTS (SELECT name FROM master.sys.databases WHERE name = N'{databaseName}')";
+        
         public static string TestConstraintExists(string constraintName) => $"IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE CONSTRAINT_NAME='{constraintName}')";
 
-        public static string TestTableExists(string schema, string table) => $"IF NOT EXISTS (SELECT schema_name(t.schema_id) AS schemaName, t.name AS table_name FROM sys.tables t WHERE t.name = '{table}' AND schema_name(t.schema_id) = '{schema}')";
+        public static string TestTableNotExists(string schema, string table) => $"IF NOT EXISTS (SELECT schema_name(t.schema_id) AS schemaName, t.name AS table_name FROM sys.tables t WHERE t.name = '{table}' AND schema_name(t.schema_id) = '{schema}')";
+        public static string TestTableExists(string schema, string table) => $"IF EXISTS (SELECT schema_name(t.schema_id) AS schemaName, t.name AS table_name FROM sys.tables t WHERE t.name = '{table}' AND schema_name(t.schema_id) = '{schema}')";
 
-        public static string TestIndexExists(string name) => $"SELECT * FROM sys.indexes pk where name = '{name}'";
+        public static string TestIndexExists(string name) => $"IF EXISTS (SELECT * FROM sys.indexes pk where name = '{name}')";
 
 
         public static string Schemas = @"SELECT SCHEMA_NAME, SCHEMA_OWNER from information_schema.SCHEMATA";
 
-        public static string Structures = @"
+        public static string Structures (string databaseName, string Filter = null) => @"
 
 SELECT
 	OBJECT_SCHEMA_NAME(tbs.[object_id],	DB_ID('$dbId'))	AS [Schema],
@@ -58,11 +62,15 @@ FROM sys.[tables] AS tbs
 	LEFT JOIN sys.identity_columns sip ON tbs.object_id = sip.object_id											
 											
 
-WHERE tbs.[is_ms_shipped] = 0
+WHERE tbs.[is_ms_shipped] = 0 $Filter
 
 ORDER BY tbs.[name], AC.[column_id]
 
-";
+"
+ .Replace("$Filter", string.IsNullOrEmpty(Filter) ? string.Empty : "AND " + Filter)
+ .Replace("$dbId", databaseName)
+ ;
+
 
         public static string Keys = @"
 select 
@@ -163,70 +171,73 @@ ORDER BY
 
         public static string Filegroups = @"SELECT data_space_id, name, type, is_default, is_system, is_read_only, is_autogrow_all_files, filegroup_guid, log_filegroup_id FROM sys.filegroups";
 
-        public static string Indexes = @"
-select 
+        public static string Indexes (string? filter = null) => @"
+SELECT 
 	i.name,
-    schema_name(t.schema_id)                                    as [schema],
-	t.[name]                                                    as tableView, 
-    case when t.[type] = 'U' then 'Table'
-        when t.[type] = 'V' then 'View'
-        end                                                     as [object_type],
+    schema_name(t.schema_id)                                    AS [schema],
+	t.[name]                                                    AS tableView, 
+    CASE WHEN t.[type] = 'U' THEN 'Table'
+        WHEN t.[type] = 'V' THEN 'View'
+        END                                                     AS [object_type],
     i.index_id,
-	i.is_primary_key                                            as is_primary,
-	i.is_unique                                                 as is_unique,
-	i.is_padded                                                 as is_padded,
-	i.allow_page_locks                                          as allow_page_locks,
-	i.allow_row_locks                                           as allow_row_locks,
-	i.optimize_for_sequential_key                               as optimize_sequential_key,
-	s.no_recompute                                              as no_recompute,
+	i.is_primary_key                                            AS is_primary,
+	i.is_unique                                                 AS is_unique,
+	i.is_padded                                                 AS is_padded,
+	i.allow_page_locks                                          AS allow_page_locks,
+	i.allow_row_locks                                           AS allow_row_locks,
+	i.optimize_for_sequential_key                               AS optimize_sequential_key,
+	s.no_recompute                                              AS no_recompute,
 	
-    substring(column_names, 1, len(column_names)-1)             as [columns],
-    substring(column_descendings, 1, len(column_descendings)-1) as [column_descendings],
-    case when i.[type] = 0 then 'HEAP'
-         when i.[type] = 1 then 'Clustered index'
-         when i.[type] = 2 then 'Nonclustered index'
-         when i.[type] = 3 then 'XML index'
-         when i.[type] = 4 then 'Spatial index'
-         when i.[type] = 5 then 'Clustered columnstore index'
-         when i.[type] = 6 then 'Nonclustered columnstore index'
-         when i.[type] = 7 then 'Nonclustered hash index'
-    end                                                         as index_type,
-    f.name                                                      as Filegroup
+    substring(column_names, 1, len(column_names)-1)             AS [columns],
+    substring(column_descendings, 1, len(column_descendings)-1) AS [column_descendings],
+    CASE WHEN i.[type] = 0 THEN 'HEAP'
+         WHEN i.[type] = 1 THEN 'Clustered index'
+         WHEN i.[type] = 2 THEN 'Nonclustered index'
+         WHEN i.[type] = 3 THEN 'XML index'
+         WHEN i.[type] = 4 THEN 'Spatial index'
+         WHEN i.[type] = 5 THEN 'Clustered columnstore index'
+         WHEN i.[type] = 6 THEN 'Nonclustered columnstore index'
+         WHEN i.[type] = 7 THEN 'Nonclustered hash index'
+    END                                                         AS index_type,
+    f.name                                                      AS Filegroup
 
-from sys.objects t
-    inner join sys.indexes i
-        on t.object_id = i.object_id
+FROM sys.objects t
+    INNER JOIN sys.indexes i
+        ON t.object_id = i.object_id
 
-	inner join sys.stats s
-		on t.object_id = s.object_id
+	INNER JOIN sys.stats s
+		ON t.object_id = s.object_id
 
     INNER JOIN sys.filegroups f
         ON i.data_space_id = f.data_space_id
 
-    cross apply (select col.[name] + ', '
-                    from sys.index_columns ic
-                        inner join sys.columns col
-                            on ic.object_id = col.object_id
-                            and ic.column_id = col.column_id
-                    where ic.object_id = t.object_id
-                        and ic.index_id = i.index_id
-                            order by col.column_id
-                            for xml path ('') ) D (column_names)
+    CROSS APPLY (SELECT col.[name] + ', '
+                    FROM sys.index_columns ic
+                        INNER JOIN sys.columns col
+                            ON ic.object_id = col.object_id
+                            AND ic.column_id = col.column_id
+                    WHERE ic.object_id = t.object_id
+                        AND ic.index_id = i.index_id
+                            ORDER BY col.column_id
+                            FOR XML PATH ('') ) D (column_names)
 
-    cross apply (select CAST(ic.is_descending_key as varchar(1)) + ', '
-                    from sys.index_columns ic
-                        inner join sys.columns col
-                            on ic.object_id = col.object_id
-                            and ic.column_id = col.column_id
-                    where ic.object_id = t.object_id
-                        and ic.index_id = i.index_id
-                            order by col.column_id
-                            for xml path ('') ) E (column_descendings)
+    CROSS APPLY (SELECT CAST(ic.is_descending_key AS varchar(1)) + ', '
+                    FROM sys.index_columns ic
+                        INNER JOIN sys.columns col
+                            ON ic.object_id = col.object_id
+                            AND ic.column_id = col.column_id
+                    WHERE ic.object_id = t.object_id
+                        AND ic.index_id = i.index_id
+                            ORDER BY col.column_id
+                            FOR XML PATH ('') ) E (column_descendings)
 
-where t.is_ms_shipped <> 1
-and index_id > 0
-order by schema_name(t.schema_id) + '.' + t.[name], i.index_id
-";
+WHERE t.is_ms_shipped <> 1
+    $filter
+
+ORDER BY schema_name(t.schema_id) + '.' + t.[name], i.index_id
+"
+    .Replace("$filter", filter ?? string.Empty)
+;
 
 
 

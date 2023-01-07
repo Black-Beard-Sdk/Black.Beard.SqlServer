@@ -13,7 +13,7 @@ namespace Bb.SqlServer.Structures.Ddl
         }
 
 
-        internal void Parse(DatabaseStructure structure)
+        public void Parse(DatabaseStructure structure)
         {
 
             Parse(structure.Tables);
@@ -21,7 +21,7 @@ namespace Bb.SqlServer.Structures.Ddl
         }
 
 
-        private void Parse(TableListDescriptor tables)
+        public void Parse(TableListDescriptor tables)
         {
 
             AppendEndLine("SET ANSI_NULLS ON");
@@ -35,7 +35,7 @@ namespace Bb.SqlServer.Structures.Ddl
 
         }
 
-        private void Parse(TableDescriptor table)
+        public void Parse(TableDescriptor table)
         {
 
             var targetTable = this._ctx.CurrentState?.GetTable(table.Schema, table.Name);
@@ -61,23 +61,24 @@ namespace Bb.SqlServer.Structures.Ddl
 
         }
 
-        private void Parse(TableDescriptor table, IndexDescriptor index)
+        public void Parse(TableDescriptor table, IndexDescriptor index)
         {
 
-            Append("CREATE ", Evaluate(index.Unique, UNIQUE, ""));
+            Append("CREATE", Evaluate(index.Unique, UNIQUE, ""));
                       
             AppendEndLine(" ", Evaluate(index.Clustered, CLUSTERED, NONCLUSTERED), " ");
 
             AppendEndLine("INDEX ", AsLabel(index.Name));
 
-            _writer.AddIndent();
-
             using (Indent())
+            {
                 AppendEndLine("ON ", AsLabel(table.Schema, table.Name));
+                Parse(index);
+            }
         
         }
 
-        private void Parse(IndexDescriptor key)
+        public void Parse(IndexDescriptor key)
         {
 
             using (IndentWithParentheses(true))

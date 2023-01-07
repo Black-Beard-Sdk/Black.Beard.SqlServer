@@ -55,7 +55,7 @@ namespace Black.Beard.SqlServer.Tests
             string databaseName = "TBase5";
             var schema = "dbo";
 
-            //var settingCurrent = new Bb.SqlServerStructures.ConnectionStringSetting() { ConnectionString = $"Data Source={Server};Initial Catalog={databaseName};Integrated Security=true;" };
+            var settingCurrent = new Bb.SqlServerStructures.ConnectionStringSetting() { ConnectionString = $"Data Source={Server};Initial Catalog={databaseName};Integrated Security=true;" };
             //DatabaseStructure dbSource = DatabaseStructure.Load(settingCurrent);
 
             DatabaseStructure db = DatabaseStructure.GetStructure(databaseName, schema);
@@ -74,9 +74,12 @@ namespace Black.Beard.SqlServer.Tests
             var file = Path.Combine(this._root, "test.sql");
             script.WriteOnDisk(file, true);
 
-
             var settingNew = new Bb.SqlServerStructures.ConnectionStringSetting() { ConnectionString = $"Data Source={Server};Integrated Security=true;" };
             script.Execute(settingNew);
+
+
+            db.Save(settingCurrent);
+
 
         }
 

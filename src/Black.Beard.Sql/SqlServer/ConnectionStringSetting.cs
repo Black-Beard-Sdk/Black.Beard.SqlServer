@@ -22,14 +22,37 @@ namespace Bb.SqlServerStructures
         public string ConnectionString { get; set; }
 
 
+        public string ConnectionStringWithoutCatalog { get => GetBuilderWithoutCatalog().ConnectionString; }
+
+
         public SqlConnectionStringBuilder GetBuilder() => new SqlConnectionStringBuilder(this.ConnectionString);
 
+        public SqlConnectionStringBuilder GetBuilderWithoutCatalog()
+        {
+            var o = new SqlConnectionStringBuilder(this.ConnectionString);
+            o.Remove("Initial Catalog");
+            return o;
+        }
+
         public SqlProcessor CreateProcessor() => new SqlProcessor(this.GetBuilder());
+
+        public SqlProcessor CreateProcessorWithoutCatalog() => new SqlProcessor(this.GetBuilderWithoutCatalog());
 
         public static implicit operator ConnectionStringSetting(string connectionString)
         {
             return new ConnectionStringSetting() { Name = "No name", ConnectionString = connectionString };
         }
 
+        public static ConnectionStringSetting Create(string host, string catalog)
+        {
+
+            var cnx = new SqlConnectionStringBuilder();
+            cnx.DataSource = host;
+            cnx.InitialCatalog = catalog;
+            cnx.IntegratedSecurity = true;
+
+            return new ConnectionStringSetting() { ConnectionString = cnx.ConnectionString };
+
+        }
     }
 }

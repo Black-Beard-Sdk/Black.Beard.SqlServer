@@ -39,7 +39,7 @@ namespace Bb.SqlServer.Structures
             var j = new CreateSchemas(writer, _ctx); 
             j.Parse(this._structure);
 
-            var d = new CreateTable(writer, _ctx);
+            var d = new CreateTables(writer, _ctx);
             d.Parse(this._structure);
 
             var e = new CreatePrimaryKeys(writer, _ctx);

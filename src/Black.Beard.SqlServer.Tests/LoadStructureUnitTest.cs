@@ -19,12 +19,13 @@ namespace Black.Beard.SqlServer.Tests
         public void TestMethod1()
         {
 
+
             string Server = ".";
-            string database = "MSG_PUDO";
+            string database = "TBase5";
 
             var setting = new Bb.SqlServerStructures.ConnectionStringSetting() { ConnectionString = $"Data Source={Server};Initial Catalog={database};Integrated Security=true;" };
 
-            var db = DatabaseStructure.Load(setting);
+            var db = DatabaseStructure.ResolveFromDatabase(setting);
 
         }
 

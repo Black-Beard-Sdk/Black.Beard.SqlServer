@@ -12,8 +12,8 @@ namespace Bb.SqlServer.Queries
     public enum ColumnStructures
     {
         Schema,
-        table_name,
-        column_name,
+        TableName,
+        ColumnName,
         system_data_type,
         max_length,
         precision,

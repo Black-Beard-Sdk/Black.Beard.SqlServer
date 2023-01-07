@@ -5,16 +5,17 @@ using System;
 
 namespace Bb.SqlServer.Structures.Ddl
 {
-    public class CreateTable : DdlBase
+
+    public class CreateTables : DdlBase
     {
 
-        public CreateTable(Writer writer, ScriptContext ctx) : base(writer, ctx)
+        public CreateTables(Writer writer, ScriptContext? ctx = null) : base(writer, ctx)
         {
 
         }
 
 
-        internal void Parse(DatabaseStructure structure)
+        public void Parse(DatabaseStructure structure)
         {
 
             CommentLine("Create tables");
@@ -24,7 +25,7 @@ namespace Bb.SqlServer.Structures.Ddl
         }
 
 
-        private void Parse(TableListDescriptor tables)
+        public void Parse(TableListDescriptor tables)
         {
 
             AppendEndLine("SET ANSI_NULLS ON");
@@ -39,10 +40,10 @@ namespace Bb.SqlServer.Structures.Ddl
 
         }
 
-        private void Parse(TableDescriptor table)
+        public void Parse(TableDescriptor table)
         {
 
-            AppendEndLine(TextQueries.TestTableExists(table.Schema, table.Name));
+            AppendEndLine(TextQueries.TestTableNotExists(table.Schema, table.Name));
             using (Indent())
             {
 
@@ -52,7 +53,9 @@ namespace Bb.SqlServer.Structures.Ddl
                 {
                     AppendEndLine();
                     Parse(table.Columns);
-                    Parse(table.Keys[0]);
+                    if (table.Keys.Count > 0)
+                        Parse(table.Keys[0]);
+                    AppendEndLine();
                 }
 
                 AppendEndLine(" ON ", AsLabel(table.PartitionSchemeName));
@@ -63,7 +66,7 @@ namespace Bb.SqlServer.Structures.Ddl
 
         }
 
-        private void Parse(PrimaryKeyDescriptor key)
+        public void Parse(PrimaryKeyDescriptor key)
         {
 
             AppendEndLine(", ");
@@ -101,7 +104,7 @@ namespace Bb.SqlServer.Structures.Ddl
             AppendEndLine(" ON ", AsLabel(key.PartitionSchemeName));
         }
 
-        private void Parse(ColumnListDescriptor columns)
+        public void Parse(ColumnListDescriptor columns)
         {
 
             bool f = false;
@@ -120,13 +123,13 @@ namespace Bb.SqlServer.Structures.Ddl
 
         }
 
-        private void Parse(ColumnDescriptor column)
+        public void Parse(ColumnDescriptor column)
         {
 
             //    <column_definition> ::=
             //       column_name <data_type>
             Append(AsLabel(column.Name), " ");
-            Parse(column.Type);
+            Parse(column.SqlType);
 
 
             //           [ FILESTREAM ]
@@ -153,35 +156,37 @@ namespace Bb.SqlServer.Structures.Ddl
 
         }
 
-        private void Parse(SqlTypeDescriptor type)
+        public void Parse(SqlTypeDescriptor type)
         {
             //   <data_type> ::=
             //       [ type_schema_name. ] type_name
             if (!string.IsNullOrEmpty(type.TypeSchemaName))
-                Append(AsLabel(type.TypeSchemaName, type.Type.SqlLabel));
+                Append(AsLabel(type.TypeSchemaName, type.SqlDataType.SqlLabel));
             else
-                Append(AsLabel(type.Type.SqlLabel));
+                Append(AsLabel(type.SqlDataType.SqlLabel));
 
             //           [ ( precision [ , scale ] | max |
-            if (type is SqlTypeWithPrecisionDescriptor size)
+            if (type .Argument1.HasValue)
             {
 
                 //           [ IDENTITY [ ( seed , increment ) ]
 
 
-                if (type is SqlTypeWithPrecisionAndScaleDescriptor scale)
+                if (type.Argument2.HasValue)
                 {
-                    if (scale.IsIdentity)
+                    if (type.IsIdentity)
                         Append(" IDENTITY");
-                    Append("(", size.Argument1, ", ", scale.Argument2, ")");
+
+                    Append("(", type.Argument1, ", ", type.Argument2, ")");
+
                 }
                 else if (string.IsNullOrEmpty(type.XmlSchemaCollection))
                 {
                     Append("(");
-                    if (size.Argument1 == -1)
+                    if (type.Argument1 == -1)
                         Append("MAX");
                     else
-                        Append(size.Argument1);
+                        Append(type.Argument1);
                     Append(")");
                 }
                 else

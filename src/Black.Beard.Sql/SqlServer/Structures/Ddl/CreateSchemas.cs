@@ -16,7 +16,7 @@ namespace Bb.SqlServer.Structures.Ddl
         }
 
 
-        internal void Parse(DatabaseStructure structure)
+        public void Parse(DatabaseStructure structure)
         {
 
             CommentLine("Create schemas");
@@ -26,7 +26,7 @@ namespace Bb.SqlServer.Structures.Ddl
         }
 
 
-        private void Parse(List<SchemaDescriptor> schemas)
+        public void Parse(List<SchemaDescriptor> schemas)
         {
             foreach (var schema in schemas)
             {

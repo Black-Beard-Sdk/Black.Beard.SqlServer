@@ -3,9 +3,9 @@
     public class ScriptContext
     {
 
-        public ScriptContext(Variables variables)
+        public ScriptContext(Variables variables = null)
         {
-            this._variables = variables;
+            this._variables = variables ?? new Variables();
         }
 
 

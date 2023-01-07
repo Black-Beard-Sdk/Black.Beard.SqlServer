@@ -6,9 +6,9 @@ namespace Bb.SqlServer
     public class Writer
     {
 
-        public Writer(StringBuilder sb)
+        public Writer(StringBuilder? sb = null)
         {
-            _sb = sb;
+            _sb = sb ?? new StringBuilder();
             _index = 0;
         }
 

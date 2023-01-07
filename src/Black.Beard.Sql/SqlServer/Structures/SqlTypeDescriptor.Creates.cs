@@ -8,7 +8,6 @@ namespace Bb.SqlServer.Structures
     public partial class SqlTypeDescriptor
     {
 
-        public static int Max { get => -1; }
 
         public static SqlTypeDescriptor Create(string sqlDatatype, bool is_identity, int max_length, int precision, int scale, int seed, int increment)
         {
@@ -134,6 +133,140 @@ namespace Bb.SqlServer.Structures
 
         }
 
+
+        public static SqlTypeDescriptor Create(string sqlDatatype, bool is_identity, int? arg1, int? arg2)
+        {
+
+            if (Types.TryGetValue(sqlDatatype, out var type))
+            {
+
+                switch (sqlDatatype)
+                {
+
+                    case _INT:
+                        if (is_identity)
+                            return IdentityBigInt(arg1.Value, arg2.Value);
+                        return Int();
+
+                    case _BIGINT:
+                        if (is_identity)
+                            return IdentityInt(arg1.Value, arg2.Value);
+                        return BigInt();
+
+                    case _NUMERIC:
+                        return Numeric();
+
+                    case _BIT:
+                        return Bit();
+
+                    case _SMALLINT:
+                        return SmallInt();
+
+                    case _DECIMAL:
+                        return Decimal(arg1.Value, arg2.Value);
+
+                    case _SMALLMONEY:
+                        return SmallMoney();
+
+
+                    case _TINYINT:
+                        return TinyInt();
+
+                    case _MONEY:
+                        return Money();
+
+                    case _FLOAT:
+                        return Float();
+
+                    case _REAL:
+                        return Real();
+
+                    case _DATE:
+                        return Date();
+
+                    case _DATETIMEOFFSET:
+                        return DateTimeOffset();
+
+                    case _DATETIME2:
+                        return DateTime2();
+
+                    case _SMALLDATETIME:
+                        return SmallDateTime();
+
+                    case _DATETIME:
+                        return DateTime();
+
+                    case _TIME:
+                        return Time();
+
+                    case _TIMESTAMP:
+                        return Timestamp();
+
+                    case _CHAR:
+                        return Char(arg1.Value);
+
+                    case _VARCHAR:
+                        return Varchar(arg1.Value);
+
+                    case _TEXT:
+                        return Text(arg1.Value);
+
+                    case _NCHAR:
+                        return Nchar(arg1.Value);
+
+                    case _NVARCHAR:
+                        return NVarchar(arg1.Value);
+
+                    case _NTEXT:
+                        return NText(arg1.Value);
+
+                    case _BINARY:
+                        return Binary(arg1.Value);
+
+                    case _VARBINARY:
+                        return VarBinary(arg1.Value);
+
+                    case _IMAGE:
+                        return Image(arg1.Value);
+
+                    case _ROWVERSION:
+                        return RowVersion();
+
+                    case _UNIQUEIDENTIFIER:
+                        return UniqueIDentifier();
+
+                    case _SQL_VARIANT:
+                        return SqlVariant();
+
+                    case _XML:
+                        return Xml();
+
+                    case _GEOMETRY:
+                        return Geometry();
+
+                    case _GEOGRAPHY:
+                        return Geography();
+
+                    default:
+                        break;
+
+                }
+
+            }
+
+            throw new NotImplementedException(sqlDatatype);
+
+        }
+
+
+        public SqlTypeDescriptor Clone()
+        {
+
+            return Create(this.SqlDataType.SqlLabel, this.IsIdentity, this.Argument1, this.Argument2);
+
+        }
+
+
         public static SqlTypeDescriptor BigInt()
         {
             return new SqlTypeDescriptor(_BIGINT);
@@ -156,7 +289,7 @@ namespace Bb.SqlServer.Structures
 
         public static SqlTypeDescriptor Decimal(int scale, int precision)
         {
-            return new SqlTypeWithPrecisionAndScaleDescriptor(scale, precision, _DECIMAL);
+            return new SqlTypeDescriptor(scale, precision, _DECIMAL);
         }
 
         public static SqlTypeDescriptor SmallMoney()
@@ -226,7 +359,7 @@ namespace Bb.SqlServer.Structures
 
         public static SqlTypeDescriptor Char(int size)
         {
-            return new SqlTypeWithPrecisionDescriptor(size, _CHAR);
+            return new SqlTypeDescriptor(size, _CHAR);
         }
 
         public static SqlTypeDescriptor Filestream()
@@ -236,42 +369,42 @@ namespace Bb.SqlServer.Structures
 
         public static SqlTypeDescriptor Varchar(int size)
         {
-            return new SqlTypeWithPrecisionDescriptor(size, _VARCHAR);
+            return new SqlTypeDescriptor(size, _VARCHAR);
         }
 
         public static SqlTypeDescriptor Text(int size)
         {
-            return new SqlTypeWithPrecisionDescriptor(size, _TEXT);
+            return new SqlTypeDescriptor(size, _TEXT);
         }
 
         public static SqlTypeDescriptor Nchar(int size)
         {
-            return new SqlTypeWithPrecisionDescriptor(size, _NCHAR);
+            return new SqlTypeDescriptor(size, _NCHAR);
         }
 
         public static SqlTypeDescriptor NVarchar(int size)
         {
-            return new SqlTypeWithPrecisionDescriptor(size, _NVARCHAR);
+            return new SqlTypeDescriptor(size, _NVARCHAR);
         }
 
         public static SqlTypeDescriptor NText(int size)
         {
-            return new SqlTypeWithPrecisionDescriptor(size, _NTEXT);
+            return new SqlTypeDescriptor(size, _NTEXT);
         }
 
         public static SqlTypeDescriptor Binary(int size)
         {
-            return new SqlTypeWithPrecisionDescriptor(size, _BINARY);
+            return new SqlTypeDescriptor(size, _BINARY);
         }
 
         public static SqlTypeDescriptor VarBinary(int size)
         {
-            return new SqlTypeWithPrecisionDescriptor(size, _VARBINARY);
+            return new SqlTypeDescriptor(size, _VARBINARY);
         }
 
         public static SqlTypeDescriptor Image(int size)
         {
-            return new SqlTypeWithPrecisionDescriptor(size, _IMAGE);
+            return new SqlTypeDescriptor(size, _IMAGE);
         }
 
         public static SqlTypeDescriptor RowVersion()
@@ -305,26 +438,16 @@ namespace Bb.SqlServer.Structures
         }
 
 
-        public static SqlTypeWithPrecisionAndScaleDescriptor IdentityInt(int start = 1, int step = 1)
+        public static SqlTypeDescriptor IdentityInt(int start = 1, int step = 1)
         {
-            return new SqlTypeWithPrecisionAndScaleDescriptor(start, step, _INT) { IsIdentity = true };
+            return new SqlTypeDescriptor(start, step, _INT) { IsIdentity = true };
         }
 
-        public static SqlTypeWithPrecisionAndScaleDescriptor IdentityBigInt(int start = 1, int step = 1)
+        public static SqlTypeDescriptor IdentityBigInt(int start = 1, int step = 1)
         {
-            return new SqlTypeWithPrecisionAndScaleDescriptor(start, step, _BIGINT) { IsIdentity = true };
+            return new SqlTypeDescriptor(start, step, _BIGINT) { IsIdentity = true };
         }
 
-        //public static StringBuilder Create(DatabaseStructure structure)
-        //{
-        //    var sb = new StringBuilder();
-        //    var wrt = new Writer(sb);
-        //    var createbase = new CreateDatabase(wrt);
-
-        //    createbase.Parse(structure);
-
-        //    return sb;
-        //}
 
 
         public const string _BIGINT = "BIGINT";

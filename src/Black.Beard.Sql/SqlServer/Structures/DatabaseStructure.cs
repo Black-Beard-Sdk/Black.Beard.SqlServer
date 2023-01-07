@@ -19,6 +19,7 @@ namespace Bb.SqlServer.Structures
             FileGroups = new FileGroupListDescriptor();
         }
 
+
         public DatabaseStructure(params SqlServerDescriptor[] objects) : this()
         {
 
@@ -35,9 +36,17 @@ namespace Bb.SqlServer.Structures
 
         }
 
-        public TableDescriptor? GetTable(string schema, string table)
+        public TableDescriptor? GetTable(string? schema, string table)
         {
+        
+            if (string.IsNullOrEmpty(schema))
+                schema = "dbo";
+    
+            if (string.IsNullOrEmpty(table))
+                throw new NullReferenceException(nameof(table));
+
             return Tables.FirstOrDefault(c => c.Schema == schema && c.Name == table);
+        
         }
 
         public IEnumerable<TableDescriptor> GetTable(string table)
@@ -87,9 +96,37 @@ namespace Bb.SqlServer.Structures
               
         public TableListDescriptor Tables { get; }
 
+        public string DefaultSchema { get; set; } = "dbo";
+
         public SchemaListDescriptor Schemas { get; }
 
         public FileGroupListDescriptor FileGroups { get; }
+
+        public IEnumerable<(TableDescriptor, IndexDescriptor)> Indexes
+        {
+            get
+            {
+                foreach (var table in this.Tables)
+                {
+
+                    foreach (var key in table.Keys)
+                        yield return (table, key);
+
+                    foreach (var index in table.Indexes)
+                        yield return (table, index);
+                }
+            }
+        }
+
+        public IEnumerable<(TableDescriptor, ColumnDescriptor)> Columns
+        {
+            get
+            {
+                foreach (var table in this.Tables)
+                    foreach (var column in table.Columns)
+                        yield return (table, column);
+            }
+        }
 
     }
 

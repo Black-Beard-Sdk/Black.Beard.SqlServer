@@ -18,7 +18,7 @@ namespace Bb.SqlServer.Structures.Ddl
         }
 
 
-        internal void Parse(DatabaseStructure structure)
+        public void Parse(DatabaseStructure structure)
         {
 
             CommentLine("Create filegroups");
@@ -28,7 +28,7 @@ namespace Bb.SqlServer.Structures.Ddl
         }
 
 
-        private void Parse(string databaseName, List<FileGroupDescriptor> fileGroups)
+        public void Parse(string databaseName, List<FileGroupDescriptor> fileGroups)
         {
             if (fileGroups.Any())
             {
@@ -62,22 +62,6 @@ namespace Bb.SqlServer.Structures.Ddl
             }
 
         }
-
-
-        //private void ParseLog(FileGroupDescriptor group)
-        //{
-        //    string path = GetPath();
-        //    var name = this._ctx.ReplaceVariables(group.Name);
-        //    using (IndentWithParentheses(true))
-        //    {
-        //        AppendEndLine($"NAME = N'{name}_log',");
-        //        AppendEndLine($"FILENAME = N'{Path.Combine(path, name)}_log.ldf',");
-        //        AppendEndLine($"SIZE = 8192KB,");
-        //        AppendEndLine($"FILEGROWTH = 65536KB");
-        //    }
-        //}
-
-
 
         private string GetPath()
         {

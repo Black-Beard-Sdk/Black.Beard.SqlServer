@@ -14,9 +14,9 @@ namespace Bb.SqlServer.Structures
     public static class BulkProvider
     {
 
-        public static BulkWriter GetBulkLoader(this TableDescriptor table, ConnectionStringSetting setting)
+        public static BulkWriter GetBulkLoader(this ConnectionStringSetting setting)
         {
-            BulkWriter loader = new BulkWriter(table, setting);
+            BulkWriter loader = new BulkWriter(setting);
             return loader;
         }
 

@@ -38,6 +38,11 @@ namespace Bb.SqlServerStructures
                 position = m.Index + m.Length;
             }
 
+            if (!current.Any())
+            {
+                current.Add(new ScriptItem(position, input));
+            }
+
             return result;
         }
 

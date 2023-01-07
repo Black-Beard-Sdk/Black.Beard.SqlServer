@@ -14,7 +14,7 @@
 
         public SourceTable As(string alias)
         {
-            this.Alias = Alias;
+            this.Alias = alias;
             return this;
         }
 
